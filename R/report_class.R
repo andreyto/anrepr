@@ -548,7 +548,8 @@ anrep$methods(write.table.file = function(data,
   return(fn)
 })
 
-anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,sort.by.sections=F) {
+anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,sort.by.sections=F,
+                              pandoc.binary=NULL) {
 
   .out.file = first_defined_arg(out.file,.self$out.file,"report")
 
@@ -616,19 +617,39 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,
     }
 
     write.el(el,fp.sub.md)
-    fp.all[[fp.sub.md]] = 1
+    fp.all[[fp.sub.md]] = fp.sub
     fp.sub.md.prev = fp.sub.md
+  }
+
+  if(is.null(pandoc.binary)) {
+    pandoc.binary = pander::panderOptions("pandoc.binary")
+    if(is.null(pandoc.binary) || !file.exists(pandoc.binary)) {
+      pandoc.binary = Sys.which("pandoc")
+    }
+  }
+  if(is.null(pandoc.binary) || !file.exists(pandoc.binary)) {
+    stop("Exetutable file 'pandoc' must be found in the system PATH or in the location provided by you
+         for the conversion from Markdown to other formats to work.")
   }
 
   for(out.format in .out.formats) {
     for(fp.sub.md in names(fp.all)) {
+      fp.sub = fp.all[[fp.sub.md]]
+      fp.sub.out = sprintf("%s.%s",fp.sub,out.format)
       ## It would be nice to add `options="-s -S"` to support
       ## Pandoc's subscript and suprscript extensions, but
       ## this will entirely replace internal default options and
       ## break TOC etc
       cat(sprintf("Pandoc converting markdown file %s to %s format\n",fp.sub.md,out.format))
-      pander::Pandoc.convert(fp.sub.md,format=out.format,open=F,footer=FALSE,
-                             portable.html=.portable.html)
+      css_base = "killercup-pandoc.css" #"github-rmarkdown.css" #"github-pandoc.css"
+      css = system.file("extdata", css_base, package = "anrepr")
+      #css_base = basename(css)
+      file.copy(css,css_base)
+      cmd = sprintf("pandoc --standalone --self-contained --toc -t %s -c %s %s -o %s",out.format,css_base,fp.sub.md,fp.sub.out)
+      cat(cmd)
+      system(cmd)
+      #pander::Pandoc.convert(fp.sub.md,format=out.format,open=F,footer=FALSE,
+      #                       portable.html=.portable.html)
     }
   }
 

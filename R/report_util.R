@@ -1,5 +1,24 @@
-make.global <- function(var) {
-  assign(deparse(substitute(var)),var,envir=globalenv())
+make.global <- function(var=NULL,name=NULL,except=c("anrep.section")) {
+  if(is.null(var)) {
+    if(is.null(name)) {
+      name="global"
+    }
+    p.e = parent.frame()
+    if(name=="global") {
+      t.e = globalenv()
+      for(n in ls(p.e, all.names=TRUE)) {
+        if(! (n %in% except) ) assign(n, get(n, p.e), t.e)
+      }
+      return()
+    }
+    else {
+      var = as.environment(as.list(p.e, all.names=TRUE))
+    }
+  }
+  if(is.null(name)) {
+    name = deparse(substitute(var))
+  }
+  assign(name,var,envir=globalenv())
 }
 
 

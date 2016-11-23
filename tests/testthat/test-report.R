@@ -1,8 +1,12 @@
 context("report")
 
-run_in_sandbox_dir <- function(expr,dir_name,cleanup=TRUE) {
+run_in_sandbox_dir <- function(expr,dir_name,cleanup=TRUE,make.unique.dir=TRUE) {
 
   if(missing(dir_name)) dir_name = file.path(getwd(),"tests_run")
+
+  if(make.unique.dir) {
+    dir_name = sprintf("%s_%s",dir_name,ceiling(runif(1, 0, 10^18)))
+  }
 
   cwd = getwd()
 
@@ -18,9 +22,12 @@ run_in_sandbox_dir <- function(expr,dir_name,cleanup=TRUE) {
 
 }
 
-run_in_sandbox_dir(cleanup = F,{
+cleanup = F
+
+#set_default_external_options()
 
 test_that("Sections work", {
+  run_in_sandbox_dir(cleanup = cleanup,{
 
   report <- anrep$new()
 
@@ -69,10 +76,11 @@ test_that("Sections work", {
   get.anrep.section.1()
 
   report$save("test_sections")
-
+  })
 })
 
 test_that("Tables work", {
+  run_in_sandbox_dir(cleanup = cleanup,{
 
   report <- anrep$new()
 
@@ -83,6 +91,8 @@ test_that("Tables work", {
   y = data.frame(a=c(1))
 
   report$add.table(y,caption="Test table 2",style="grid")
+
+  report$add.table(matrix(1:100,nrow = 5),caption="Test table 3, default style")
 
   x = c(x="_a_",y="b",z="c")
 
