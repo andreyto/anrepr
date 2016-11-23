@@ -549,7 +549,7 @@ anrep$methods(write.table.file = function(data,
 })
 
 anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,sort.by.sections=F,
-                              pandoc.binary=NULL) {
+                              pandoc.binary=NULL,css.file=NULL) {
 
   .out.file = first_defined_arg(out.file,.self$out.file,"report")
 
@@ -632,6 +632,16 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,
          for the conversion from Markdown to other formats to work.")
   }
 
+  if(is.null(css.file)) {
+    css_base = "kcup-pandoc.css" #"github-rmarkdown.css" #"github-pandoc.css"
+    css.file = system.file("extdata", css_base, package = "anrepr",mustWork = TRUE)
+  }
+  if(!file.exists(css.file)) {
+    stop(sprintf("Provided CSS file not found: %s",css.file))
+  }
+  css_base = basename(css.file)
+  file.copy(css.file,css_base)
+
   for(out.format in .out.formats) {
     for(fp.sub.md in names(fp.all)) {
       fp.sub = fp.all[[fp.sub.md]]
@@ -641,10 +651,6 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,
       ## this will entirely replace internal default options and
       ## break TOC etc
       cat(sprintf("Pandoc converting markdown file %s to %s format\n",fp.sub.md,out.format))
-      css_base = "killercup-pandoc.css" #"github-rmarkdown.css" #"github-pandoc.css"
-      css = system.file("extdata", css_base, package = "anrepr")
-      #css_base = basename(css)
-      file.copy(css,css_base)
       cmd = sprintf("pandoc --standalone --self-contained --toc -t %s -c %s %s -o %s",out.format,css_base,fp.sub.md,fp.sub.out)
       cat(cmd)
       system(cmd)
