@@ -83,3 +83,60 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   }
   x
 }
+
+
+`%anrep++%` <- function(header_call,expr) {
+  env = parent.frame()
+  header_call = substitute(header_call)
+  expr = substitute(expr)
+  header_call[["section.action"]] = "incr"
+  header_call[["sub"]] = F
+  eval(header_call,envir = env)
+  invisible(eval(expr, envir = env))
+}
+
+#' Infix operator to wrap a report sub-section
+#'
+#' @param header_call Call to \code{anrep$header()}
+#' @param expr Code section that be reporting under the new subsection
+#'
+#' @export
+#'
+#' @examples
+#' ## See \code{\link{anrep}} examples
+`%anrep>>%` <- function(header_call,expr) {
+  env = parent.frame()
+  header_call = substitute(header_call)
+  expr = substitute(expr)
+  header_call[["section.action"]] = "push"
+  header_call[["sub"]] = F
+  .report = eval(header_call,envir = env)
+  on.exit({invisible(.report$pop.section())})
+  ## wrap user code in its own function to protect
+  ## our on.exit() handler in case user code uses
+  ## on.exit without `add=T`
+  make_function(alist(), expr, env = env)()
+}
+
+#' Infix operator to wrap a sub-report section
+#'
+#' @param header_call Call to \code{anrep$header()}
+#' @param expr Code section that be reporting under the new subsection
+#'
+#' @export
+#'
+#' @examples
+#' ## See \code{\link{anrep}} examples
+`%anrep//%` <- function(header_call,expr) {
+  env = parent.frame()
+  header_call = substitute(header_call)
+  expr = substitute(expr)
+  header_call[["section.action"]] = "push"
+  header_call[["sub"]] = T
+  .report = eval(header_call,envir = env)
+  on.exit({invisible(.report$pop.section())})
+  ## wrap user code in its own function to protect
+  ## our on.exit() handler in case user code uses
+  ## on.exit without `add=T`
+  make_function(alist(), expr, env = env)()
+}

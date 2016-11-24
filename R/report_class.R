@@ -1,3 +1,9 @@
+#' Report class
+#'
+#' Essentially a logger for tables, plots and other objects,
+#' generating a Markdown text that is converted into a multi-page static Web site
+#' by the \code{save} method
+#' @export anrep
 #' @importFrom methods setRefClass new
 anrep <- setRefClass('anrep',
                      fields = list(
@@ -13,7 +19,8 @@ anrep <- setRefClass('anrep',
                        'object.index' = 'list',
                        'data.dir' = 'character',
                        'widget.dir' = 'character',
-                       'widget.deps.dir' = 'character'
+                       'widget.deps.dir' = 'character',
+                       'section.path' = 'list'
                      )
 )
 
@@ -27,6 +34,7 @@ anrep$methods(initialize = function(
   portable.html=T,
   ...
 ) {
+  "Construct new instance"
 
   .self$author=author
   .self$title=title
@@ -49,6 +57,11 @@ anrep$methods(initialize = function(
   .self$widget.deps.dir = "widget_deps" #html.path(.self$widget.dir,"widget_deps")
   dir.create(.self$widget.deps.dir, showWarnings = FALSE, recursive = TRUE)
 
+  .self$section.path = new.section.path()
+
+  .self$incr.section()
+  .self$push.section()
+
   callSuper(...)
 
 })
@@ -56,8 +69,8 @@ anrep$methods(initialize = function(
 ## private service method - should be called whenever an element is
 ## appended to the .self$entries
 anrep$methods(priv.append.section = function() {
-  incr.anrep.section.if.zero()
-  .self$sections[[length(.self$sections)+1]] = get.anrep.section()$path
+  .self$incr.section.if.zero()
+  .self$sections[[length(.self$sections)+1]] = .self$get.section()
 })
 
 ## private service method - should be called whenever an element
@@ -72,13 +85,72 @@ anrep$methods(priv.append.index = function(type) {
   return(val)
 })
 
+anrep$methods(get.section = function() {
+  invisible(.self$section.path)
+})
+
+anrep$methods(incr.section = function(has.header=NULL) {
+  .self$section.path = incr.section.path(.self$section.path,has.header=has.header)
+  invisible(.self$section.path)
+})
+
+anrep$methods(incr.section.if.zero = function(has.header=NULL) {
+  sec.path = .self$get.section()
+  if(sec.path[[length(sec.path)]]$num==0) return (.self$incr.section(has.header = has.header))
+  invisible(.self$get.section())
+})
+
+anrep$methods(push.section = function(sub=F,has.header=F) {
+  .self$section.path = push.section.path(.self$section.path,sub=sub,has.header=has.header)
+  invisible(.self$section.path)
+})
+
+anrep$methods(pop.section = function() {
+  .self$section.path = pop.section.path(.self$section.path)
+  invisible(.self$section.path)
+})
+
+anrep$methods(add.header = function(x,level=NULL,section.action="incr",sub=F,echo=T,...) {
+
+  if(sub) {
+    section.action = "push"
+  }
+
+  sec.path = switch(EXPR=section.action,
+                    incr=.self$incr.section(has.header = T),
+                    push=.self$incr.section(has.header = T),
+                    keep=.self$get.section())
+
+
+  num = extract.path.nums.section.path(sec.path)
+
+  if (is.null(level)) {
+    ##headers will shift to the left above level 5 in HTML output
+    level = min(5,length(num))
+  }
+  x = paste(format.section.path(sec.path),x)
+  ##newlines currently break header formatting, remove them
+  x = gsub("\n"," ",x)
+  .self$add.p(pander::pandoc.header.return(x,level=level,...),echo=echo)
+
+  if(section.action=="push") {
+    sec.path = .self$push.section(sub=sub,has.header=T)
+  }
+
+  invisible(.self)
+
+})
+
 anrep$methods(add.paragraph = function(x) {
   .self$entries = c(.self$entries, list(
     list(result = pander::pandoc.p.return(x)))
   )
 })
 
-anrep$methods(format.caption = function(caption,section=NULL,type=NULL) {
+anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL) {
+  if(is.null(caption)) {
+    caption = ""
+  }
   if(!is.null(caption)) {
     if(is.null(type)) {
       type = ""
@@ -95,7 +167,11 @@ anrep$methods(format.caption = function(caption,section=NULL,type=NULL) {
     else {
       name = ""
     }
-    caption = paste(format.anrep.section(section),name,caption)
+    if(is.null(sec.path)) {
+      .self$incr.section.if.zero()
+      sec.path = .self$get.section()
+    }
+    caption = paste(format.section.path(sec.path),name,caption)
     if(substr(caption,nchar(caption),nchar(caption)+1)!=".") {
       caption = paste(caption,".",sep="")
     }
@@ -250,28 +326,30 @@ anrep$methods(add.list = function(x,...) {
   return(.self$add(as.list(x),...))
 })
 
-anrep$methods(reset.section = function(...) {
-  return(NULL)
-})
-
-anrep$methods(default.section = function(...) {
-  return(get.default.section(...))
-})
-
-anrep$methods(get.section = function(...) {
-  return(get.anrep.section(...))
-})
-
-anrep$methods(incr.section = function(...) {
-  return(incr.anrep.section(...))
-})
-
-anrep$methods(push.section = function(...) {
-  return(push.anrep.section(...))
-})
-
-anrep$methods(pop.section = function(...) {
-  return(pop.anrep.section(...))
+anrep$methods(make.file.name = function(name.base="",
+                                        make.unique=T,
+                                        dir=NULL,
+                                        sec.path=NULL) {
+  if(is.null(dir)) {
+    dir = .self$data.dir
+  }
+  if(length(name.base)==0) {
+    name.base = ""
+  }
+  if(name.base=="" && !make.unique) {
+    stop("Need either non-empty name.base or make.unique=T")
+  }
+  if(is.null(sec.path)) {
+    sec.path = .self$get.section()
+  }
+  fn.start = format.section.path.as.file(sec.path)
+  if(make.unique) {
+    fn = tempfile.unix(paste(fn.start,"-",sep=""),tmpdir=dir,fileext=name.base)
+  }
+  else {
+    fn = file.path(dir,paste(fn.start,name.base,sep="-"),fsep="/")
+  }
+  return(fn)
 })
 
 anrep$methods(add.file = function(x,
@@ -438,7 +516,7 @@ anrep$methods(add.p = function(x,rule=F,echo=T,...) {
     .self$add.paragraph(pander::pandoc.horizontal.rule.return())
   }
   if(echo) {
-    cat(format.anrep.section(),x,"\n")
+    cat(format.section.path(.self$get.section()),x,"\n")
   }
   .self$priv.append.section()
   return(.self$add.paragraph(x,...))
@@ -457,63 +535,6 @@ anrep$methods(add.printed = function(x,caption=NULL,echo=T,...) {
     .self$add.p(.self$format.caption(caption))
   }
   return(.self$add.p(anrep.as.printed.return(x,...),echo=echo))
-})
-
-anrep$methods(add.header = function(x,level=NULL,anrep.section=NULL,section.action="incr",echo=T,sub=F,...) {
-  if(sub) {
-    section.action = "push"
-  }
-  do.clone = is.null(anrep.section)
-  anrep.section = switch(section.action,
-                          incr=incr.anrep.section(anrep.section),
-                          push=incr.anrep.section(anrep.section),
-                          keep=get.anrep.section(anrep.section))
-  num = extract.path.nums.anrep.section(anrep.section)
-  if (is.null(level)) {
-    ##headers will shift to the left above level 5 in HTML output
-    level = min(5,length(num))
-  }
-  x = paste(format.anrep.section(anrep.section),x)
-  ##newlines currently break header formatting, remove them
-  x = gsub("\n"," ",x)
-  .self$add.p(pander::pandoc.header.return(x,level=level,...),echo=echo)
-
-  if(section.action=="push") {
-    rep.sec.push = NULL
-    if(!do.clone) rep.sec.push = anrep.section
-    #w/o argument it clones
-    anrep.section = push.anrep.section(rep.sec.push,sub=sub,has.header=T)
-  }
-
-  if(.self$incremental.save) {
-    .self$save()
-  }
-
-  return (anrep.section)
-
-})
-
-anrep$methods(make.file.name = function(name.base="",
-                                        make.unique=T,
-                                        dir=NULL,
-                                        section.path=NULL) {
-  if(is.null(dir)) {
-    dir = .self$data.dir
-  }
-  if(length(name.base)==0) {
-    name.base = ""
-  }
-  if(name.base=="" && !make.unique) {
-    stop("Need either non-empty name.base or make.unique=T")
-  }
-  fn.start = format.section.path.as.file(section.path)
-  if(make.unique) {
-    fn = tempfile.unix(paste(fn.start,"-",sep=""),tmpdir=dir,fileext=name.base)
-  }
-  else {
-    fn = file.path(dir,paste(fn.start,name.base,sep="-"),fsep="/")
-  }
-  return(fn)
 })
 
 ## Save data as a delimited text file
@@ -564,6 +585,8 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,
   f_sections = .self$sections
   f_entries = .self$entries
 
+  stopifnot(length(f_sections)==length(f_entries))
+
   if(sort.by.sections) {
     ##sort by section lexicographically, using a stable sort
     sect_ord = sort.list(
@@ -591,12 +614,12 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,
       sub.path = section.par
     }
     else {
-      sub.path = NULL
+      sub.path = section[1:1]
     }
-    fp.sub = make.file.name(name.base=fp,
+    fp.sub = .self$make.file.name(name.base=fp,
                             make.unique=F,
                             dir=".",
-                            section.path=sub.path)
+                            sec.path=sub.path)
     fp.sub.md = paste(fp.sub,".Rmd",sep="") #".md"
     #print(paste("fp.sub=",fp.sub))
 
@@ -646,16 +669,12 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,portable.html=NULL,
     for(fp.sub.md in names(fp.all)) {
       fp.sub = fp.all[[fp.sub.md]]
       fp.sub.out = sprintf("%s.%s",fp.sub,out.format)
-      ## It would be nice to add `options="-s -S"` to support
-      ## Pandoc's subscript and suprscript extensions, but
-      ## this will entirely replace internal default options and
-      ## break TOC etc
+      ## TODO: Consider adding pandoc "-S" to support
+      ## Pandoc's subscript and suprscript extensions
       cat(sprintf("Pandoc converting markdown file %s to %s format\n",fp.sub.md,out.format))
       cmd = sprintf("pandoc --standalone --self-contained --toc -t %s -c %s %s -o %s",out.format,css_base,fp.sub.md,fp.sub.out)
       cat(cmd)
       system(cmd)
-      #pander::Pandoc.convert(fp.sub.md,format=out.format,open=F,footer=FALSE,
-      #                       portable.html=.portable.html)
     }
   }
 

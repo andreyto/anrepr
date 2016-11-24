@@ -72,40 +72,40 @@ calc.text.size <- function(n, mins=0.5, maxs=4, B=6, D=100){
   return(s)
 }
 
-mget.stack<-function(x,ifnotfound) {
-  pars = lapply(rev(sys.parents()),sys.frame)
-  #print(pars)
-  #print(sys.parent())
-  #print(sys.frames())
-  for(fr in pars) {
-    y = tryCatch(get(x,envir=fr,inherits=F),error=function(x) NULL)
-    #print(paste("y=",y,"ifnotfound=",ifnotfound))
-    if(!is.null(y)) {
-      #print(paste("y=",y,"ifnotfound=",ifnotfound))
-      return (y)
-    }
-  }
-  return (ifnotfound)
+new.section.path.el <- function(num=0,sub=F,has.header=F) {
+  ret = list(num=num,sub=sub,has.header=has.header)
+  class(ret) <- append(class(ret), "section.path.el", 0)
+  ret
 }
 
-new_section_path_el <- function(num=0,sub=F,has.header=F) {
-  list(num=num,sub=sub,has.header=has.header)
+new.section.path <- function(num=0,sub=F,has.header=F) {
+  ret = list(new.section.path.el(num=num,sub=sub,has.header=has.header))
+  ret
+}
+
+incr.section.path <- function(x,has.header=NULL) {
+  last = length(x)
+  x[[last]]$num = x[[last]]$num + 1
+  if(!is.null(has.header)) x[[last]]$has.header = has.header
+  x
+}
+
+push.section.path <- function(x,sub=F,has.header=F) {
+  x[[length(x)+1]] = new.section.path.el(sub=sub,has.header=has.header)
+  x
+}
+
+pop.section.path <- function(x) {
+  if(length(x)==0) stop("Attempting to pop an element from empty sequence")
+  x[0:(length(x)-1)]
 }
 
 extract.path.nums.section.path <- function(x) {
   sapply(x,function(y) y$num)
 }
 
-extract.path.nums.anrep.section <- function(x) {
-  extract.path.nums.section.path(x$path)
-}
-
 extract.path.subs.section.path <- function(x) {
   sapply(x,function(y) y$sub)
-}
-
-extract.path.subs.anrep.section <- function(x) {
-  extract.path.subs.section.path(x$path)
 }
 
 get.sub.level.section.path <- function(x) {
@@ -126,72 +126,6 @@ cut.to.bottom.sub.section.path <- function(x) {
   }
 }
 
-get.default.section<-function() {
-  x = new.env(parent=emptyenv())
-  x$path = list(new_section_path_el())
-  return (x)
-}
-
-clone.anrep.section<-function(x) {
-  return (as.environment(as.list(x, all.names=TRUE)))
-}
-
-get.anrep.section<-function(default=get.default.section()) {
-  y = mget.stack("anrep.section",ifnotfound=0)
-  if(!identical(y,0)) return (y)
-  return (default)
-}
-
-## when x is NULL, this function creates a clone
-push.anrep.section<-function(x=NULL,sub=F,has.header=F) {
-  if(is.null(x)) {
-    x = get.anrep.section(default=NULL)
-    if(is.null(x)) {
-      x = get.default.section()
-    }
-    else {
-      x = clone.anrep.section(x)
-    }
-  }
-  x$path[[length(x$path)+1]] = new_section_path_el(num=0,sub=sub,has.header=has.header)
-  return (x)
-}
-
-pop.anrep.section<-function(x=NULL) {
-  if(is.null(x)) {
-    x = get.anrep.section(default=NULL)
-    if(is.null(x)) {
-      x = get.default.section()
-    }
-  }
-  l = length(x$path)
-  if(l>1)
-    x$path = x$path[1:l-1]
-  return (x)
-}
-
-incr.anrep.section<-function(x=NULL) {
-  if(is.null(x)) {
-    x = get.anrep.section(default=NULL)
-    if(is.null(x)) {
-      x = get.default.section()
-    }
-  }
-  last = length(x$path)
-  if(last>0) {x$path[[last]]$num = x$path[[last]]$num + 1}
-  else {x$path[[1]]$num = 1}
-  return (x)
-}
-
-incr.anrep.section.if.zero <- function(x=NULL) {
-  if(is.null(x)) {
-    x = get.anrep.section()
-  }
-  last = length(x$path)
-  if(last>0 && x$path[[last]]$num == 0) {x$path[[last]]$num = x$path[[last]]$num + 1}
-  return (x)
-}
-
 format.section.path<-function(x=NULL) {
   if(is.null(x)) {
     x = get.anrep.section()$path
@@ -200,25 +134,51 @@ format.section.path<-function(x=NULL) {
   return (paste("\\(",paste(num,sep="",collapse="."),"\\)",sep=""))
 }
 
-format.anrep.section<-function(x=NULL) {
-  if(is.null(x)) {
-    x = get.anrep.section()
-  }
-  format.section.path(x$path)
-}
-
-format.section.path.as.file<-function(x=NULL) {
-  if(is.null(x)) {
-    x = get.anrep.section()$path
-  }
+format.section.path.as.file<-function(x) {
   num = extract.path.nums.section.path(x)
   return (paste(num,sep="",collapse="."))
 }
 
-format.anrep.section.as.file<-function(x=NULL) {
-  if(is.null(x)) {
-    x = get.anrep.section()
+# Converts objects of several kinds into an environment (possibly by reference).  Copied from package pryr.
+to_env <- function(x, quiet = FALSE) {
+  if (is.environment(x)) {
+    x
+  } else if (is.list(x)) {
+    list2env(x)
+  } else if (is.function(x)) {
+    environment(x)
+  } else if (length(x) == 1 && is.character(x)) {
+    if (!quiet)
+      message("Using environment ", x)
+    as.environment(x)
+  } else if (length(x) == 1 && is.numeric(x) && x > 0) {
+    if (!quiet)
+      message("Using environment ", search()[x])
+    as.environment(x)
+  } else {
+    stop("Input can not be coerced to an environment", call. = FALSE)
   }
-  format.section.path.as.file(x$path)
 }
 
+# Test if all elements of x are named. Copied from package pryr.
+all_named <- function(x) {
+  if (length(x) == 0)
+    return(TRUE)
+  !is.null(names(x)) && all(names(x) != "")
+}
+
+# Constructs a function object from a body expression and a pairlist of arguments. Copied from the package
+# pryr.  Examples: make_function(alist(x =), x**2, env) will create (function(x) x**2) and environment() of
+# this function will be env.  make_function(alist(), x**2, env) will create (function() x**2), so that when
+# the function is called, the value of x will be search in env and up the enclosing chain of environments.
+make_function <- function(args, body, env = parent.frame()) {
+  args <- as.pairlist(args)
+  # stopifnot( all_named(args), is.language(body))
+  env <- to_env(env)
+
+  eval(call("function", args, body), env)
+}
+
+dummy <- function() {
+
+}

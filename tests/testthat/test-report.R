@@ -29,83 +29,80 @@ cleanup = F
 test_that("Sections work", {
   run_in_sandbox_dir(cleanup = cleanup,{
 
-  report <- anrep$new()
+    report <- anrep$new()
 
-  get.anrep.section.3<-function() {
-    print("get.anrep.section.3")
-    #print(incr.anrep.section())
-    anrep.section = report$add.header("get.anrep.section.3",section.action="push",sub=T)
-    report$add.descr("Plots are shown with relation to various combinations of meta
-                     data variables and in different graphical representations. Lots of plots here.")
+    my.func.3<-function(subreports.header) {
+      print("my.func.3")
+      report$add.header(subreports.header) %anrep//% {
+        report$add.header("H2.1.subreport 1") %anrep//% {
+          report$add.descr("Some text")
+          report$add.header("H2.1.subreport 1 incremented section")
+          report$add.table(data.frame(A=c("a","b"),B=c(1,2)),caption="Table")
+          report$add.descr(paste("File name with extra output is ",report$make.file.name("data.csv")))
+        }
+        report$add.header("H2.1.subreport 2") %anrep//% {
+          report$add.descr("Some text")
+          report$add.header("H2.1.subreport 2 incremented section")
+          report$add.table(data.frame(A=c("a","b"),B=c(1,2)),caption="Table")
+          report$add.descr(paste("File name with extra output is ",report$make.file.name("data.csv")))
+        }
+      }
+    }
 
-    #report$add.header("Iterating over all combinations of grouping variables")
+    my.func.2<-function() {
+      print("my.func.2")
+      report$add.header("H2.1") %anrep>>% {
+        for(i in 1:3) {
+          my.func.3(sprintf("H2.1 two subreports here %s",i))
+        }
+      }
+    }
 
-    anrep.section = report$add.header("get.anrep.section.3.1")
-    report$add.table(data.frame(A=c("a","b"),B=c(1,2)),caption="Table")
-    report$add.descr(paste("File name with extra output is ",report$make.file.name("data.csv")))
-    return (anrep.section)
-  }
+    my.func.1<-function() {
+      print("my.func.1")
+      report$add.header("H1")
+      report$add.descr("H1 text")
+      report$add.header("H2 with subsections") %anrep>>% {
+        report$add(plot(x <- sort(rnorm(47))),caption="Figure one in H2")
+        my.func.2()
+      }
+      report$add.header("H3")
+      report$add(plot(x <- sort(rnorm(10))),caption="Figure one in H3")
+    }
 
-  get.anrep.section.2<-function() {
-    print("get.anrep.section.2")
-    #anrep.section = incr.anrep.section()
-    print(get.anrep.section())
-    anrep.section = report$add.header("get.anrep.section.2",section.action="push")
-    get.anrep.section.3()
-    #anrep.section = report$pop.section()
-    get.anrep.section.3()
-    anrep.section = report$pop.section()
-    get.anrep.section.3()
-  }
+    my.func.1()
 
-  get.anrep.section.1<-function() {
-    print("get.anrep.section.1")
-    anrep.section = report$get.section()
-    report$add.header("get.anrep.section.1")
-    #anrep.section = incr.anrep.section()
-    #print(anrep.section)
-    print(get.anrep.section())
-    report$add.header("get.anrep.section.1")
-    report$add(plot(x <- sort(rnorm(47))),caption="Figure")
-    get.anrep.section.2()
-    #anrep.section = push.anrep.section()
-    print(get.anrep.section())
-    report$add.header("get.anrep.section.4")
-  }
-
-  get.anrep.section.1()
-
-  report$save("test_sections")
+    report$save()
   })
 })
 
 test_that("Tables work", {
   run_in_sandbox_dir(cleanup = cleanup,{
 
-  report <- anrep$new()
+    report <- anrep$new()
 
-  y = data.frame(a=c(1,2),b=c(2,4),c=c("zzz","mmmm"))
+    y = data.frame(a=c(1,2),b=c(2,4),c=c("zzz","mmmm"))
 
-  report$add.table(y,caption="Test table 1",style="multiline")
+    report$add.table(y,caption="Test table 1",style="multiline")
 
-  y = data.frame(a=c(1))
+    y = data.frame(a=c(1))
 
-  report$add.table(y,caption="Test table 2",style="grid")
+    report$add.table(y,caption="Test table 2",style="grid")
 
-  report$add.table(matrix(1:100,nrow = 5),caption="Test table 3, default style")
+    report$add.table(matrix(1:100,nrow = 5),caption="Test table 3, default style")
 
-  x = c(x="_a_",y="b",z="c")
+    x = c(x="_a_",y="b",z="c")
 
-  report$add.vector(x,name="Clade",caption="Test vector 1",
-                    show.row.names=T,wrap.vals=F,style="grid")
-  report$add.vector(x,name="Clade",caption="Test vector 1",
-                    show.row.names=T,wrap.vals=T,style="grid")
-  report$add.vector(x,name="Clade",caption="Test vector 1",
-                    show.row.names=F,wrap.vals=T,style="grid")
+    report$add.vector(x,name="Clade",caption="Test vector 1",
+                      show.row.names=T,wrap.vals=F,style="grid")
+    report$add.vector(x,name="Clade",caption="Test vector 1",
+                      show.row.names=T,wrap.vals=T,style="grid")
+    report$add.vector(x,name="Clade",caption="Test vector 1",
+                      show.row.names=F,wrap.vals=T,style="grid")
 
-  report$save("test_tables")
+    report$save()
 
-})
+  })
 
 })
 
