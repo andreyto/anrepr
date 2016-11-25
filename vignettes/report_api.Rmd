@@ -1,0 +1,47 @@
+---
+title: "Example of using main features of the anrep class API"
+author: "Andrey Tovchigrechko"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Example of using main features of the anrep class API}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This vignette demonstrates how you would use methods of the `anrep` class in order to 
+control the final structure of your report.
+
+```{r}
+library(anrepr)
+```
+
+An example source file is included with the package, and can be located with this command:
+```{r cache=FALSE}
+example_code_file <- system.file("examples", "example_sections.R", package = "anrepr",mustWork = TRUE)
+```
+
+Below is the code listing of that example. The code uses the anrep class API calls to create a report
+with multiple nested sections and subreports and to insert a few plots and tables.
+Look at the inline comments for the annotation of major steps.
+```{r cache=FALSE, echo=FALSE}
+knitr::read_chunk(example_code_file)
+```
+```{r example_sections_report_functions, cache=FALSE, results="hide", warning = FALSE, message = FALSE, comment=NA}
+```
+
+And then we run the report generation pipeline that we setup above. In this vignette code,
+we told it not to export the generated Markdown code into HTML, in order to avoid
+dependency on the external Pandoc executable.
+```{r cache=FALSE, results="hide", warning = FALSE, message = FALSE}
+make_example_sections_report("example_sections_report",export=F)
+```
+
+During actual use on your own system where you installed Pandoc, you would instead call:
+```{r eval=FALSE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
+make_example_sections_report("example_sections_report")
+```
+
+Look at the [resulting HTML report](example_sections_report/report-1.html) which is also included 
+with the package.
+
