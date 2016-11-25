@@ -1,5 +1,10 @@
 /*
- * I add this to html files generated with pandoc.
+ * Default CSS for anrep reports.
+ * Adopted from https://gist.github.com/killercup/5917178
+ * The original license described in the Gist was, quoting the author:
+ * ```
+ * feel free to assume its public domain || CC0 || MIT || Apache 2.0
+ * ```
  */
 
 html {
