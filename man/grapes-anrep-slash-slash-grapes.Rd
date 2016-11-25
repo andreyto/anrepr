@@ -2,7 +2,7 @@
 % Please edit documentation in R/report_functions.R
 \name{\%anrep//\%}
 \alias{\%anrep//\%}
-\title{Infix operator to wrap a sub-report section}
+\title{Infix operator to wrap a sub-report code block (Header 1.1 // Subreport Header 1.1.1)}
 \usage{
 header_call \%anrep//\% expr
 }
@@ -12,7 +12,7 @@ header_call \%anrep//\% expr
 \item{expr}{Code section that be reporting under the new subsection}
 }
 \description{
-Infix operator to wrap a sub-report section
+Infix operator to wrap a sub-report code block (Header 1.1 // Subreport Header 1.1.1)
 }
 \examples{
 ## See \\code{\\link{anrep}} examples

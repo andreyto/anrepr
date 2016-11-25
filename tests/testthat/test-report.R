@@ -24,18 +24,23 @@ run_in_sandbox_dir <- function(expr,dir_name,cleanup=TRUE,make.unique.dir=TRUE) 
 
 cleanup = F
 
-#set_default_external_options()
-
 test_that("Sections work", {
+  set_default_external_options()
+
   run_in_sandbox_dir(cleanup = cleanup,{
 
-    report <- anrep$new()
+    report <- anrep()
 
     my.func.3<-function(subreports.header) {
       print("my.func.3")
       report$add.header(subreports.header) %anrep//% {
         report$add.header("H2.1.subreport 1") %anrep//% {
           report$add.descr("Some text")
+          if(requireNamespace("ggplot2", quietly = TRUE)) {
+            report$add(ggplot2::qplot(mpg, wt, data = datasets::mtcars,
+                                      facets = vs ~ am,geom = "violin"),
+                       caption = "Ggplot2 example")
+          }
           report$add.header("H2.1.subreport 1 incremented section")
           report$add.table(data.frame(A=c("a","b"),B=c(1,2)),caption="Table")
           report$add.descr(paste("File name with extra output is ",report$make.file.name("data.csv")))
@@ -63,11 +68,13 @@ test_that("Sections work", {
       report$add.header("H1")
       report$add.descr("H1 text")
       report$add.header("H2 with subsections") %anrep>>% {
-        report$add(plot(x <- sort(rnorm(47))),caption="Figure one in H2")
+        report$add(plot(x <- sort(rnorm(47))),caption="Figure one in H2",
+                   graph.unify=T)
         my.func.2()
       }
       report$add.header("H3")
-      report$add(plot(x <- sort(rnorm(10))),caption="Figure one in H3")
+      report$add(plot(x <- sort(rnorm(10))),caption="Figure one in H3",
+                 graph.unify=T)
     }
 
     my.func.1()
@@ -79,7 +86,9 @@ test_that("Sections work", {
 test_that("Tables work", {
   run_in_sandbox_dir(cleanup = cleanup,{
 
-    report <- anrep$new()
+    set_default_external_options()
+
+    report <- anrep()
 
     y = data.frame(a=c(1,2),b=c(2,4),c=c("zzz","mmmm"))
 

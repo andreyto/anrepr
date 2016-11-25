@@ -1,10 +1,16 @@
+#' Reset various global options to tune up a default style of the reports
+#'
+#' This overrides various options in the \code{pander} package and changes
+#' the default ggplot2 theme.
+#' @export
 set_default_external_options <- function() {
+  message("Overriding default options of the pander package and ggplot2 default theme")
   pander::panderOptions("round",4)
   pander::panderOptions("table.style","rmarkdown") #"grid"
   pander::panderOptions("table.split.table",Inf)
   pander::panderOptions("table.alignment.default","left")
   pander::panderOptions("evals.messages",F)
-  #pander::panderOptions("graph.fontsize",10)
+  pander::panderOptions("graph.fontsize",20)
   pander::evalsOptions("cache",F)
   pander::evalsOptions("cache.mode","environment")
   #pander::evalsOptions("output",c("result"))
@@ -32,7 +38,19 @@ set_default_external_options <- function() {
   }
 }
 
-# print a named list as a string of named function arguments
+#
+#' Return a named list as a string of named function arguments
+#'
+#' Useful in creating captions where you need to report the parameters
+#' with wich some method was called by the user
+#' @param x Named list
+#' @param collapse Passed to \code{\link[base]{paste}}
+#'
+#' @export
+#'
+#' @examples
+#' arg_list_as_str(list(a=1,b="bbb"))
+#'
 arg_list_as_str<-function(x,collapse=",") {
   paste("[",
         paste(capture.output(str(x,no.list=T,comp.str="",give.attr=F,give.head=F)),collapse=collapse),
@@ -41,6 +59,14 @@ arg_list_as_str<-function(x,collapse=",") {
   )
 }
 
+#' Return Markdown string with the argument printed verbatim
+#'
+#' @param x String or object to print
+#' @param attrs String with extra Markdown attributes
+#' @export
+#'
+#' @examples
+#' anrep.as.printed.return("**Text**")
 anrep.as.printed.return <- function(x,attrs="") {
   x = capture.output(print(x))
   paste0('\n', repChar('`', 7),
@@ -52,6 +78,18 @@ anrep.as.printed.return <- function(x,attrs="") {
 
 anrep.special.symb = "\\-\\[\\]`*_{}()#+!~"
 
+#' Quote all Markdown special symbols in a string
+#'
+#' Use this protect Markdown formatting symbols from being interpreted
+#' when Markdown is rendered
+#' @param x Input string
+#'
+#' @export
+#'
+#' @examples
+#' anrep.escape.special("_a_")
+#' anrep.escape.special("**a**[bbb](ccc)")
+#' anrep.escape.special("`a`")
 anrep.escape.special <- function(x) {
   x = gsub(paste('([',anrep.special.symb,'])',sep=''),"\\\\\\1",
            format(x,digits=pander::panderOptions("digits")),perl=T)
@@ -59,6 +97,15 @@ anrep.escape.special <- function(x) {
   gsub('[|]','&#124;',x)
 }
 
+#' Return Markdown link, escaping the link title
+#'
+#' @param url Link URL
+#' @param text Link title
+#'
+#' @export
+#'
+#' @examples
+#' anrep.link.verbatim.return("my_link","**link title**")
 anrep.link.verbatim.return <- function(url,text=NULL) {
   if(is.null(text)) {
     text = url
@@ -66,6 +113,15 @@ anrep.link.verbatim.return <- function(url,text=NULL) {
   sapply(seq_along(url),function(i) { pander::pandoc.link.return(url[i],pander::pandoc.verbatim.return(text[i]))})
 }
 
+#' Return Markdown string with a generated anchor (using HTML tag)
+#'
+#' @param anchor Name of anchor
+#' @param text Title of anchor
+#'
+#' @export
+#'
+#' @examples
+#' anrep.anchor.return("My_anchor","My anchor title")
 anrep.anchor.return <- function(anchor,text) {
   anchor.tag = sprintf('<a name="%s"></a>',anchor)
   ret = sprintf("%s%s",
@@ -75,7 +131,15 @@ anrep.anchor.return <- function(anchor,text) {
   return(ret)
 }
 
-## make string x a (more or less) valid file name
+#' Convert a string to a (more or less) valid file name
+#'
+#' @param x String
+#' @param max.length Limit to the length of the returned string
+#'
+#' @export
+#'
+#' @examples
+#' anrep.str_to_file_name("My long $ and ! || && strange string")
 anrep.str_to_file_name <- function(x,max.length=0) {
   x = gsub('[^-[:alnum:]._]+','.',x)
   if(max.length>0) {
@@ -84,7 +148,20 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   x
 }
 
-
+#' Infix operator to wrap a report code block after incrementing section index (Header 1.1 ++ Header 1.2)
+#'
+#' This is not strictly necessary to use because default \code{anrep$header()}
+#' parameters result in incrementing the section index, and no cleanup handling
+#' is required to end the section, but using this will make the code's relationship
+#' with reporting section more clear, and protect from future implementation changes
+#' if they introduce the internal cleanup code
+#' @param header_call Call to \code{anrep$header()}
+#' @param expr Code section that be reporting under the new subsection
+#'
+#' @export
+#'
+#' @examples
+#' ## See \code{\link{anrep}} examples
 `%anrep++%` <- function(header_call,expr) {
   env = parent.frame()
   header_call = substitute(header_call)
@@ -95,7 +172,7 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   invisible(eval(expr, envir = env))
 }
 
-#' Infix operator to wrap a report sub-section
+#' Infix operator to wrap a report sub-section code block (Header 1.1 >> Subheader 1.1.1)
 #'
 #' @param header_call Call to \code{anrep$header()}
 #' @param expr Code section that be reporting under the new subsection
@@ -118,7 +195,7 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   make_function(alist(), expr, env = env)()
 }
 
-#' Infix operator to wrap a sub-report section
+#' Infix operator to wrap a sub-report code block (Header 1.1 // Subreport Header 1.1.1)
 #'
 #' @param header_call Call to \code{anrep$header()}
 #' @param expr Code section that be reporting under the new subsection
