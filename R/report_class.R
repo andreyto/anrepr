@@ -55,7 +55,6 @@ anrep <- setRefClass('anrep',
                        'entries' = 'list',
                        'sections' = 'list',
                        'incremental.save' = 'logical',
-                       'out.dir' = 'character',
                        'out.file' = 'character',
                        'out.formats' = 'character',
                        'self.contained.html' = 'logical',
@@ -65,7 +64,8 @@ anrep <- setRefClass('anrep',
                        'widget.dir' = 'character',
                        'widget.deps.dir' = 'character',
                        'resources.dir' = 'character',
-                       'section.path' = 'list'
+                       'section.path' = 'list',
+                       'echo' = 'logical'
                      )
 )
 
@@ -77,6 +77,7 @@ anrep$methods(initialize = function(
   out.formats = c("html"),
   incremental.save = F,
   self.contained.html=T,
+  echo=F,
   ...
 ) {
   "Construct new instance.
@@ -110,6 +111,7 @@ anrep$methods(initialize = function(
   .self$self.contained.html=self.contained.html
   .self$object.index=list(table=1,figure=1)
   .self$data.dir = "data"
+  .self$echo = echo
 
   if(basename(out.file) != out.file) {
     stop("out.file argument cannot have a directory component")
@@ -164,6 +166,23 @@ anrep$methods(private.add.paragraph = function(x) {
   .self$entries = c(.self$entries, list(
     list(result = pander::pandoc.p.return(x)))
   )
+  invisible(x)
+})
+
+anrep$methods(add.p = function(x,rule=F,echo=NULL,...) {
+  "Add new paragraph
+
+  parameter: x Text to write in the new paragraph
+  parameter: rule Also add horizontal rule
+  "
+
+  if(rule) {
+    .self$private.add.paragraph(pander::pandoc.horizontal.rule.return())
+  }
+  if(first_defined_arg(echo,.self$echo)) {
+    cat(format.section.path(.self$get.section()),x,"\n")
+  }
+  return(.self$private.add.paragraph(x,...))
 })
 
 anrep$methods(get.section = function() {
@@ -191,7 +210,7 @@ anrep$methods(pop.section = function() {
   invisible(.self$section.path)
 })
 
-anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=F,echo=T,...) {
+anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=F,echo=NULL,...) {
   "Add new header and automatically start new report section.
 
   You should rarely provide any arguments other than title.
@@ -204,7 +223,9 @@ anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=F
 
   \\}
 
-
+  return: The instance of the anrep class on which this method was called. This is needed
+  for the chaining with the infix %anrep??% operators to allow them updating the state
+  of the anrep object.
   "
   x = title
   if(sub) {
@@ -359,7 +380,7 @@ anrep$methods(add.widget = function(x,
                        width,
                        height))
   }
-  return(x)
+  return(invisible(x))
 })
 
 
@@ -441,7 +462,7 @@ anrep$methods(add = function(x,
   }
   .self$entries = c(.self$entries,res)
   .self$priv.append.section()
-  return(res)
+  return(invisible(res))
 })
 
 anrep$methods(add.list = function(x,...) {
@@ -545,7 +566,7 @@ anrep$methods(add.table = function(x,
                                    split.tables=Inf,
                                    style="rmarkdown",
                                    skip.if.empty=F,
-                                   echo=T,
+                                   echo=NULL,
                                    ...) {
   "Add table object.
 
@@ -659,7 +680,7 @@ anrep$methods(add.table = function(x,
 
   .self$add.p(caption)
   tbl_p = pander::pandoc.table.return(x,split.tables=split.tables,style=style,caption=NULL,...)
-  if(echo) {
+  if(first_defined_arg(echo,.self$echo)) {
     print(tbl_p)
   }
   return(.self$add.p(tbl_p))
@@ -692,22 +713,6 @@ anrep$methods(add.vector = function(x,name=NULL,
   return(.self$add.table(y,caption=caption,show.row.names=show.row.names,...))
 })
 
-anrep$methods(add.p = function(x,rule=F,echo=T,...) {
-  "Add new paragraph
-
-  parameter: x Text to write in the new paragraph
-  rule Also add horizontal rule
-  "
-
-  if(rule) {
-    .self$private.add.paragraph(pander::pandoc.horizontal.rule.return())
-  }
-  if(echo) {
-    cat(format.section.path(.self$get.section()),x,"\n")
-  }
-  return(.self$private.add.paragraph(x,...))
-})
-
 anrep$methods(add.descr = function(x,...) {
   "Add text.
 
@@ -720,7 +725,7 @@ anrep$methods(add.package.citation = function(x,...) {
   .self$add.p(capture.output(print(citation(x),style="text")))
 })
 
-anrep$methods(add.printed = function(x,caption=NULL,echo=T,...) {
+anrep$methods(add.printed = function(x,caption=NULL,echo=NULL,...) {
   "Add a chunk of text verbatim preserving it from Markdown formatting.
 
   This is a lazy ecape hatch for situations where R function such as Anova

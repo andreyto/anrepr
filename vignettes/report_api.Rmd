@@ -10,27 +10,68 @@ vignette: >
 ---
 
 This vignette demonstrates how you would use methods of the `anrep` class in order to 
-control the final structure of your report.
+add sections and data to your report. Using the API is very similar to using a
+logging library to emit some information from different places in your code.
+Only in this case, you are emitting rich content such as plots and tables, as well
+as organizing output into a hierarchical structure. This allows very easily 
+instrumenting any arbitrarily complex analysis pipeline to generate a graphical report.
 
-```{r}
+The minimal `Hello World` example:
+```{r results="hide", warning = FALSE, message = FALSE, echo=c(-1,-6)}
+cur_dir=getwd(); tmp_dir=tempfile(); dir.create(tmp_dir,showWarnings = FALSE); setwd(tmp_dir); pander::panderOptions('knitr.auto.asis', FALSE)
 library(anrepr)
+report = anrep("Hello World")
+report$add.table(datasets::mtcars[1:5,], caption="Hello Table")
+report$save(export=FALSE)
+hello_rmd = readLines("report-1.Rmd",warn = FALSE); setwd(cur_dir)
 ```
 
-An example source file is included with the package, and can be located with this command:
+That code generates the following Markdown:
+
+```{r echo=FALSE, comment=''}
+cat(paste(hello_rmd,collapse = '\n'))
+```
+
+And that Markdown can be rendered, depending on styling, as something like:
+
+```{r results="asis", echo=FALSE}
+cat(paste(hello_rmd[!grepl('^%',hello_rmd)],collapse = '\n'))
+```
+
+The report hierarchy is represented by nested sections as well as by subreports 
+(separate report files) linked from their parent reports. Creating another level
+of the hierarchy is done by using the appropriate infix operator after the call
+to a `add.header` method. For example, 
+```{r eval=FALSE} 
+report$add.header("H2 with subsections") %anrep>>% { 
+  report$add.descr("**Computed stuff**")
+}
+```
+will result in all reporting calls inside the `%anrep>>% { }` code
+block added to a new subsection one level deeper than what it was before the 
+`add.header` call. The original section numbering will be restored after the code
+block is finished.
+
+A worked example source file is included with the package, and can be located with this command:
 ```{r cache=FALSE}
+library(anrepr)
 example_code_file <- system.file("examples", "example_sections.R", package = "anrepr",mustWork = TRUE)
 ```
 
-Below is the code listing of that example. The code uses the anrep class API calls to create a report
+Below is the code listing of that example. The code uses the `anrep` class API calls to create a report
 with multiple nested sections and subreports and to insert a few plots and tables.
 Look at the inline comments for the annotation of major steps.
+
+And by navigating to **[this](example_sections_report/report-1.html)** link, you can look at the rendered 
+HTML report that the code listed below has produced.
+
 ```{r cache=FALSE, echo=FALSE}
 knitr::read_chunk(example_code_file)
 ```
 ```{r example_sections_report_functions, cache=FALSE, results="hide", warning = FALSE, message = FALSE, comment=NA}
 ```
 
-And then we run the report generation pipeline that we setup above. In this vignette code,
+After defining the functions, we run the report generation pipeline that we setup above. In this vignette code,
 we told it not to export the generated Markdown code into HTML, in order to avoid
 dependency on the external Pandoc executable.
 ```{r cache=FALSE, results="hide", warning = FALSE, message = FALSE}
@@ -41,7 +82,4 @@ During actual use on your own system where you installed Pandoc, you would inste
 ```{r eval=FALSE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
 make_example_sections_report("example_sections_report")
 ```
-
-Look at the [resulting HTML report](example_sections_report/report-1.html) which is also included 
-with the package.
 
