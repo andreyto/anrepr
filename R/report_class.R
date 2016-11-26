@@ -74,7 +74,7 @@ anrep$methods(initialize = function(
   author = "",
   date = base::date(),
   out.file = "report",
-  out.formats = c("html"),
+  out.formats = c("html","knitr"),
   incremental.save = F,
   self.contained.html=T,
   echo=F,
@@ -113,24 +113,44 @@ anrep$methods(initialize = function(
   .self$data.dir = "data"
   .self$echo = echo
 
+  if(!is.character(out.file)) {
+    stop("The `out.file`` argument must be a string")
+  }
+
+  if(.self$out.formats[1]=="knitr") {
+    if(length(.self$out.formats)!=1) {
+      stop("Knitr can be only a single output format")
+    }
+  }
+
   if(basename(out.file) != out.file) {
     stop("out.file argument cannot have a directory component")
   }
 
-  unlink(.self$data.dir,recursive=TRUE,force=TRUE)
+  cleanup.before = T
+
+  if("knitr" %in% .self$out.formats) {
+    # For some reason under knitr deletion in successive
+    # reports steps on each other
+    # WARNING: probably need to generate unique dir names instead,
+    # but need to figure out what to do with graph.dir
+    cleanup.before = F
+  }
+
+  #unlink(.self$data.dir,recursive=TRUE,force=TRUE)
   dir.create(.self$data.dir, showWarnings = FALSE, recursive = TRUE)
 
   .self$graph.dir = pander::evalsOptions("graph.dir")
-  unlink(.self$graph.dir,recursive=TRUE,force=TRUE)
+  if(cleanup.before) unlink(.self$graph.dir,recursive=TRUE,force=TRUE)
   dir.create(.self$graph.dir, showWarnings = FALSE, recursive = TRUE)
 
   .self$widget.dir = "." #normalizePath(graph.dir,winslash = "/")
   .self$widget.deps.dir = "widget_deps" #html.path(.self$widget.dir,"widget_deps")
-  unlink(.self$widget.deps.dir,recursive=TRUE,force=TRUE)
+  if(cleanup.before) unlink(.self$widget.deps.dir,recursive=TRUE,force=TRUE)
   dir.create(.self$widget.deps.dir, showWarnings = FALSE, recursive = TRUE)
 
   .self$resources.dir = "resources"
-  unlink(.self$resources.dir,recursive=TRUE,force=TRUE)
+  if(cleanup.before) unlink(.self$resources.dir,recursive=TRUE,force=TRUE)
   dir.create(.self$resources.dir, showWarnings = FALSE, recursive = TRUE)
 
   .self$section.path = new.section.path()
@@ -713,16 +733,22 @@ anrep$methods(add.vector = function(x,name=NULL,
   return(.self$add.table(y,caption=caption,show.row.names=show.row.names,...))
 })
 
-anrep$methods(add.descr = function(x,...) {
+anrep$methods(add.descr = function(x,caption=NULL,...) {
   "Add text.
 
   Arguments to add.p method are accepted here"
+  if(!is.null(caption)) {
+    .self$add.p(.self$format.caption(caption))
+  }
   .self$add.p(x,...)
 })
 
-anrep$methods(add.package.citation = function(x,...) {
+anrep$methods(add.package.citation = function(x,caption=NULL,...) {
   "Add citation for a package name"
-  .self$add.p(capture.output(print(citation(x),style="text")))
+  if(!is.null(caption)) {
+    .self$add.p(.self$format.caption(caption))
+  }
+  .self$add.p(capture.output(print(citation(x),style="text")),...)
 })
 
 anrep$methods(add.printed = function(x,caption=NULL,echo=NULL,...) {
@@ -738,6 +764,7 @@ anrep$methods(add.printed = function(x,caption=NULL,echo=NULL,...) {
   if(!is.null(caption)) {
     .self$add.p(.self$format.caption(caption))
   }
+
   return(.self$add.p(anrep.as.printed.return(x,...),echo=echo))
 })
 
@@ -780,9 +807,15 @@ anrep$methods(write.table.file = function(data,
   return(fn)
 })
 
-anrep$methods(save = function(out.file=NULL,out.formats=NULL,self.contained.html=NULL,sort.by.sections=F,
-                              pandoc.binary=NULL,css.file=NULL,
-                              export=T) {
+anrep$methods(save = function(out.file=NULL,
+                              out.formats=NULL,
+                              self.contained.html=NULL,
+                              pandoc.binary=NULL,
+                              css.file=NULL,
+                              export=T,
+                              concatenate=F,
+                              pandoc.meta=T,
+                              sort.by.sections=F) {
   "Save the report to Markdown and convert it to the final output formats.
 
   Call this at the end of your analysis.
@@ -791,10 +824,20 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,self.contained.html
 
   report$save()
 
+  parameter: out.file A string to use as a root name for the output report files,
+  which will be generated as <out.file>_<subreport_section>.<out.format> (for example,
+  report_1.1.Rmd or report_1.1.html). This value should not normally contain a directory component
+  because all links will be always generated relative to the current working directory.
+  Alternatively, out.file can be an open output connection object (inherit from base::connection
+  class). In that case, concatenate argument will be reset to TRUE, export - to FALSE, and
+  the single concatenated Markdown stream will be sent to the out.file connnection.
+
   parameter: out.formats Convert Markdown to these formats (using Pandoc binary executable). The only
-  format that supports all features of our generated Markdown is currently HTML, which will
+  format that supports all features of our generated Markdown is currently `html`, which will
   be the default value. In particular, subreports and htmlwidgets will only work with HTML
-  output.
+  output. Another special case is `knitr`. It only can be a single output format, and
+  in that case the Markdown output will be concatenated and send to standard output stream
+  without Pandoc meta data header. This mode overrides a number of other parameters.
 
   parameter: self.contained.html Embed images (default resolution versions) and stylesheets into each HTML file.
   Note that generated data files and widget files will still be referenced by links. In any
@@ -815,14 +858,39 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,self.contained.html
   parameter: export Export Markdown report files into the final output formats (ignored if
   Pandoc binary is not found)
 
+  parameter: concatenate Flatten all subreports into a single output file
+
+  parameter: pandoc.meta Add Pandoc metadata header
+
   return: data.frame with files names for all (sub)reports for all output formats, and a field named
   is_root that is set to TRUE for the row that is the root level report (the report
   from which the viewing has to start)
   "
 
-  .out.file = first_defined_arg(out.file,.self$out.file,"report")
+  out.streaming = F
+  out.streaming.format = "md"
 
   .out.formats = first_defined_arg(out.formats,.self$out.formats,"html")
+
+  out.file.arg = out.file
+  if(.out.formats[1]=="knitr") {
+    if(length(.out.formats)!=1) {
+      stop("Knitr can be only a single output format")
+    }
+    out.file.arg = stdout()
+    pandoc.meta = F
+  }
+
+  if(inherits(out.file.arg,"connection")) out.streaming = T
+
+  if(out.streaming) {
+    concatenate = T
+    # we now only stream Markdown, so no point in the export stage
+    export = F
+  }
+
+  ## If streaming, still use a real file as a temporary output
+  .out.file = first_defined_arg(if(out.streaming) NULL else out.file.arg,.self$out.file,"report")
 
   .self.contained.html = first_defined_arg(self.contained.html,.self$self.contained.html,T)
 
@@ -858,7 +926,7 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,self.contained.html
     #print(paste("Full section:",paste(section,collapse=" ")))
     #print(paste("Par section:",paste(section.par,collapse=" ")))
 
-    if(length(section.par) > 0) {
+    if(!concatenate && length(section.par) > 0) {
       sub.path = section.par
     }
     else {
@@ -872,11 +940,18 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,self.contained.html
     fp.sub.md = paste(fp.sub,".Rmd",sep="") #".md"
     #print(paste("fp.sub=",fp.sub))
 
-    if(is.null(fp.all[[fp.sub.md]])) {
+    # if this subreport output was not touched before, write Pandoc metadata header
+    if(pandoc.meta && is.null(fp.all[[fp.sub.md]])) {
       cat(pander::pandoc.title.return(.self$author, .self$title, .self$date), file = fp.sub.md)
     }
 
-    if(i.el>1) {
+    if(!concatenate && i.el>1) {
+      # if subreport level of this record is below than subreport level of
+      # the previous record, append the header of the previous record into the
+      # current subreport,
+      # and append the link to the previouse subreport
+      # Warning: the useful outcome of this depends on records sorted in section
+      # order.
       sub.level.prev = get.sub.level.section.path(f_sections[[i.el-1]])
       sub.level = get.sub.level.section.path(section)
       if(sub.level > sub.level.prev) {
@@ -901,12 +976,12 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,self.contained.html
   }
 
   if(export) {
-  if(is.null(pandoc.binary) || !file.exists(pandoc.binary)) {
-    message("Exetutable file 'pandoc' must be found in the system PATH or in the location provided by you
+    if(is.null(pandoc.binary) || !file.exists(pandoc.binary)) {
+      message("Exetutable file 'pandoc' must be found in the system PATH or in the location provided by you
          for the conversion from Markdown to other formats to work. Because pandoc binary is not found,
             Markdown will not be converted.")
-    export = F
-  }
+      export = F
+    }
   }
 
   if(!export) {
@@ -924,8 +999,8 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,self.contained.html
   css_base = html.path(.self$resources.dir,"anrep.css")
   file.copy(css.file,css_base)
 
-  out.files = list(md=names(fp.all))
-  for(out.format in .out.formats) {
+  out.files = list(md=names(fp.all),is_root = c(T,rep(F,length(fp.all)-1)))
+  for(out.format in .out.formats[.out.formats!="knitr"]) {
     for(fp.sub.md in names(fp.all)) {
       fp.sub = fp.all[[fp.sub.md]]
       fp.sub.out = sprintf("%s.%s",fp.sub,out.format)
@@ -941,8 +1016,15 @@ anrep$methods(save = function(out.file=NULL,out.formats=NULL,self.contained.html
     }
   }
   out.files = as.data.frame(out.files)
-  out.files$is_root = c(T,rep(F,nrow(out.files)-1))
-  out.files
+  if(out.streaming) {
+    out.buffers = out.files[[out.streaming.format]]
+    for(out.buffer in out.buffers) {
+      writeLines(readLines(out.buffer,warn = F),out.file.arg)
+    }
+    unlink(out.buffers)
+    out.files[,out.streaming.format] = NA
+  }
+  invisible(out.files)
 })
 
 

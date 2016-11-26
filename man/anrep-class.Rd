@@ -67,7 +67,7 @@ structure of your report.
   format, and allow you setting additional arguments.
   }
 
-\item{\code{add.descr(x, ...)}}{Add text.
+\item{\code{add.descr(x, caption = NULL, ...)}}{Add text.
 
   Arguments to add.p method are accepted here}
 
@@ -79,7 +79,7 @@ structure of your report.
   }
 
 \item{\code{add.header(title, level = NULL, section.action = "incr", sub = F,
-  echo = T, ...)}}{Add new header and automatically start new report section.
+  echo = NULL, ...)}}{Add new header and automatically start new report section.
 
   You should rarely provide any arguments other than title.
 
@@ -91,20 +91,22 @@ structure of your report.
 
   \}
 
-
+  return: The instance of the anrep class on which this method was called. This is needed
+  for the chaining with the infix %anrep??% operators to allow them updating the state
+  of the anrep object.
   }
 
 \item{\code{add.list(x, ...)}}{Add list object}
 
-\item{\code{add.p(x, rule = F, echo = T, ...)}}{Add new paragraph
+\item{\code{add.p(x, rule = F, echo = NULL, ...)}}{Add new paragraph
 
   parameter: x Text to write in the new paragraph
-  rule Also add horizontal rule
+  parameter: rule Also add horizontal rule
   }
 
-\item{\code{add.package.citation(x, ...)}}{Add citation for a package name}
+\item{\code{add.package.citation(x, caption = NULL, ...)}}{Add citation for a package name}
 
-\item{\code{add.printed(x, caption = NULL, echo = T, ...)}}{Add a chunk of text verbatim preserving it from Markdown formatting.
+\item{\code{add.printed(x, caption = NULL, echo = NULL, ...)}}{Add a chunk of text verbatim preserving it from Markdown formatting.
 
   This is a lazy ecape hatch for situations where R function such as Anova
   summary returns text carefully formatted with spaces and you want to
@@ -117,7 +119,7 @@ structure of your report.
 \item{\code{add.table(x, caption = NULL, show.row.names = is.matrix(x),
   wrap.caption = T, wrap.vals = T, export.to.file = T, file.name = NULL,
   show.first.rows = 200, show.first.cols = 200, split.tables = Inf,
-  style = "rmarkdown", skip.if.empty = F, echo = T, ...)}}{Add table object.
+  style = "rmarkdown", skip.if.empty = F, echo = NULL, ...)}}{Add table object.
 
   parameter: caption Caption
 
@@ -175,8 +177,8 @@ structure of your report.
   }
 
 \item{\code{initialize(title = "Analysis Report", author = "", date = base::date(),
-  out.file = "report", out.formats = c("html"), incremental.save = F,
-  self.contained.html = T, ...)}}{Construct new instance.
+  out.file = "report", out.formats = c("html", "knitr"),
+  incremental.save = F, self.contained.html = T, echo = F, ...)}}{Construct new instance.
 
   parameter: title Report title string
 
@@ -214,8 +216,8 @@ structure of your report.
   }
 
 \item{\code{save(out.file = NULL, out.formats = NULL, self.contained.html = NULL,
-  sort.by.sections = F, pandoc.binary = NULL, css.file = NULL,
-  export = T)}}{Save the report to Markdown and convert it to the final output formats.
+  pandoc.binary = NULL, css.file = NULL, export = T, concatenate = F,
+  pandoc.meta = T, sort.by.sections = F)}}{Save the report to Markdown and convert it to the final output formats.
 
   Call this at the end of your analysis.
 
@@ -223,10 +225,20 @@ structure of your report.
 
   report$save()
 
+  parameter: out.file A string to use as a root name for the output report files,
+  which will be generated as <out.file>_<subreport_section>.<out.format> (for example,
+  report_1.1.Rmd or report_1.1.html). This value should not normally contain a directory component
+  because all links will be always generated relative to the current working directory.
+  Alternatively, out.file can be an open output connection object (inherit from base::connection
+  class). In that case, concatenate argument will be reset to TRUE, export - to FALSE, and
+  the single concatenated Markdown stream will be sent to the out.file connnection.
+
   parameter: out.formats Convert Markdown to these formats (using Pandoc binary executable). The only
-  format that supports all features of our generated Markdown is currently HTML, which will
+  format that supports all features of our generated Markdown is currently `html`, which will
   be the default value. In particular, subreports and htmlwidgets will only work with HTML
-  output.
+  output. Another special case is `knitr`. It only can be a single output format, and
+  in that case the Markdown output will be concatenated and send to standard output stream
+  without Pandoc meta data header. This mode overrides a number of other parameters.
 
   parameter: self.contained.html Embed images (default resolution versions) and stylesheets into each HTML file.
   Note that generated data files and widget files will still be referenced by links. In any
@@ -246,6 +258,10 @@ structure of your report.
 
   parameter: export Export Markdown report files into the final output formats (ignored if
   Pandoc binary is not found)
+
+  parameter: concatenate Flatten all subreports into a single output file
+
+  parameter: pandoc.meta Add Pandoc metadata header
 
   return: data.frame with files names for all (sub)reports for all output formats, and a field named
   is_root that is set to TRUE for the row that is the root level report (the report

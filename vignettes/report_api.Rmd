@@ -1,10 +1,10 @@
 ---
-title: "Example of using main features of the anrep class API"
+title: "Tutorial on using main features of the anrep class API"
 author: "Andrey Tovchigrechko"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Example of using main features of the anrep class API}
+  %\VignetteIndexEntry{Tutorial on using main features of the anrep class API}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -13,46 +13,83 @@ This vignette demonstrates how you would use methods of the `anrep` class in ord
 add sections and data to your report. Using the API is very similar to using a
 logging library to emit some information from different places in your code.
 Only in this case, you are emitting rich content such as plots and tables, as well
-as organizing output into a hierarchical structure. This allows very easily 
-instrumenting any arbitrarily complex analysis pipeline to generate a graphical report.
+as organizing output into a hierarchical structure. This allows easily providing 
+any arbitrarily complex analysis pipeline with a graphical reporting facility.
 
-The minimal `Hello World` example:
-```{r results="hide", warning = FALSE, message = FALSE, echo=c(-1,-6)}
-cur_dir=getwd(); tmp_dir=tempfile(); dir.create(tmp_dir,showWarnings = FALSE); setwd(tmp_dir); pander::panderOptions('knitr.auto.asis', FALSE)
+# The minimal `Hello World` example
+
+*The code and its rendered output as shown below the code.*
+
+```{r results="asis", warning = FALSE, message = FALSE, cache=FALSE}
+pander::panderOptions('knitr.auto.asis', FALSE)
+pander::evalsOptions("cache",F)
 library(anrepr)
-report = anrep("Hello World")
-report$add.table(datasets::mtcars[1:5,], caption="Hello Table")
-report$save(export=FALSE)
-hello_rmd = readLines("report-1.Rmd",warn = FALSE); setwd(cur_dir)
+report = anrep("Hello World",out.formats="knitr")
+report$add.table(mtcars[1:5,], caption="Hello Table")
+report$add(with(mtcars,plot(mpg,hp)),caption="Hello Plot",graph.unify=T)
+report$save()
 ```
 
-That code generates the following Markdown:
 
-```{r echo=FALSE, comment=''}
-cat(paste(hello_rmd,collapse = '\n'))
+**Note** that in the `anrep` constructor above, we used `out.formats="knitr"`.
+This was done to generate the output that would get rendered by Knitr in
+this vignette document for demonstration purposes. The default intended mode, 
+however, is to let the `anrep$save`
+method call `Pandoc` conversion utility directly and generate a static Web
+site with multiple Web pages and data files, while running outside of Knitr. 
+That would have happened if we just used `report = anrep("Hello World")`. 
+You will be able to view the full auto-generated Web site following the link 
+provided for a large example script further in this document. For now, we will 
+use a couple of more Knitr-rendered examples for the purposes of introducing `anrep` 
+API features.
+
+That Hello World example generated the following Markdown:
+
+
+```{r echo=FALSE, warning = FALSE, message = FALSE, cache=FALSE}
+report = anrep("Hello World",out.formats="knitr")
+report$add.table(mtcars[1:5,], caption="Hello Table")
+report$add(with(mtcars,plot(mpg,hp)),caption="Hello Plot",graph.unify=T)
+report$save()
 ```
 
-And that Markdown can be rendered, depending on styling, as something like:
-
-```{r results="asis", echo=FALSE}
-cat(paste(hello_rmd[!grepl('^%',hello_rmd)],collapse = '\n'))
-```
+# Generating subsections
 
 The report hierarchy is represented by nested sections as well as by subreports 
 (separate report files) linked from their parent reports. Creating another level
 of the hierarchy is done by using the appropriate infix operator after the call
-to a `add.header` method. For example, 
-```{r eval=FALSE} 
+to a `add.header` method. In the example below, all reporting 
+calls inside the `%anrep>>% { }` code
+block will be added to a new subsection one level deeper than what it was before the 
+`add.header` call. The original section numbering is restored after the code
+block is finished. The default `add.header` call after that simply increments
+the section index at the current level.
+
+*The code and its rendered output as shown below the code.*
+
+```{r results="asis", warning = FALSE, message = FALSE, cache=FALSE}
+report = anrep("Hello World",out.formats="knitr")
+report$add.header("H1 Hello header")
+report$add.table(mtcars[1:5,], caption="Hello Table")
 report$add.header("H2 with subsections") %anrep>>% { 
-  report$add.descr("**Computed stuff**")
+  report$add.header("Subsection under H2")
+  report$add.descr("**Computing stuff**", caption="Hello stuff")
+  fit = lm(mpg~hp,mtcars)
+  report$add(fit,caption = "Hello model")
+  report$add.header("Another subsection under H2")
+  report$add(with(mtcars,plot(mpg,hp)), caption="Hello Plot",graph.unify=T)
 }
+report$add.table(mtcars[5:10,], caption="Back at the original section level, Hello Table Again")
+report$add.header("H3 incremented at the same level")
+report$add.printed(lm(mpg~hp,mtcars),caption = "Hello model again")
+report$save()
 ```
-will result in all reporting calls inside the `%anrep>>% { }` code
-block added to a new subsection one level deeper than what it was before the 
-`add.header` call. The original section numbering will be restored after the code
-block is finished.
+
+
+# A big example with Subreports
 
 A worked example source file is included with the package, and can be located with this command:
+
 ```{r cache=FALSE}
 library(anrepr)
 example_code_file <- system.file("examples", "example_sections.R", package = "anrepr",mustWork = TRUE)
@@ -62,8 +99,9 @@ Below is the code listing of that example. The code uses the `anrep` class API c
 with multiple nested sections and subreports and to insert a few plots and tables.
 Look at the inline comments for the annotation of major steps.
 
-And by navigating to **[this](example_sections_report/report-1.html)** link, you can look at the rendered 
+And by **[navigating to this link](example_sections_report/report-1.html)**, you can look at the rendered 
 HTML report that the code listed below has produced.
+
 
 ```{r cache=FALSE, echo=FALSE}
 knitr::read_chunk(example_code_file)

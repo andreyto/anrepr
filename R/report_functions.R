@@ -69,11 +69,11 @@ arg_list_as_str<-function(x,collapse=",") {
 #' anrep.as.printed.return("**Text**")
 anrep.as.printed.return <- function(x,attrs="") {
   x = capture.output(print(x))
-  paste0('\n', repChar('`', 7),
+  paste0('\n', pander::repChar('`', 7),
          ifelse(attrs == '', '', sprintf('{%s}', attrs)),
          '\n', paste(x,
                      collapse = '\n'),
-         '\n', repChar('`', 7), '\n')
+         '\n', pander::repChar('`', 7), '\n')
 }
 
 anrep.special.symb = "\\-\\[\\]`*_{}()#+!~"
