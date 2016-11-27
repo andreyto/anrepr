@@ -126,12 +126,12 @@ cut.to.bottom.sub.section.path <- function(x) {
   }
 }
 
-format.section.path<-function(x=NULL) {
-  if(is.null(x)) {
-    x = get.anrep.section()$path
-  }
+format.section.path<-function(x) {
+  stopifnot(!is.null(x))
   num = extract.path.nums.section.path(x)
-  return (paste("\\(",paste(num,sep="",collapse="."),"\\)",sep=""))
+  #Using code block quotes here - otherwise just ( makes it a link in Markdown,
+  #and \( is MathJax inline opening bracket in the rendered HTML e.g. in knitr
+  return (paste("`(",paste(num,sep="",collapse="."),")`",sep=""))
 }
 
 format.section.path.as.file<-function(x) {
