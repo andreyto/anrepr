@@ -9,18 +9,147 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette demonstrates how you would use methods of the `anrep` class in order to 
-add sections and data to your report. Using the API is very similar to using a
+# Scope
+
+This vignette demonstrates how you would initiate a report generation in your R code
+by creating the `anrep` class and use its methods for adding both structural and data
+elements to your report. 
+
+Using the API is very similar to using a
 logging library to emit some information from different places in your code.
 Only in this case, you are emitting rich content such as plots and tables, as well
-as organizing output into a hierarchical structure. This allows easily providing 
-any arbitrarily complex analysis pipeline with a graphical reporting facility.
+as organizing output into a hierarchical structure.
+
+The report hierarchy is expressed through:
+
+1. generation of multi-level section numbering
+2. creation of multiple linked documents (called "subreports" 
+   in the `anrep` documentation).
+
+Overall, the feature set in the `anrepr` package allows easily equipping any arbitrarily 
+complex analysis pipeline with a graphical reporting facility. 
+
+The typical final output
+is an auto-generated static Web site that contains linked HTML pages; embedded and stand-alone
+versions of the plots as well as saved data files. The Web pages will contain dynamic Java Script
+elements if your code creates those R objects which implement the 
+[*htmlwidgets*](https://cran.r-project.org/package=htmlwidgets) 
+interface. The generated Web site directory is portable - it can be copied to other locations 
+or computers and viewed directly from disk, or it can be deployed to a Web server.
+
+# The reasons for creating this package
+
+Popular R frameworks like built-in Sweave and [RMarkdown](https://cran.r-project.org/package=rmarkdown) / 
+[Knitr](https://cran.r-project.org/package=knitr) packages greatly facilitate reproducible research and graphical 
+report generation by embedding analysis code into the documents written in a structured markup
+languages such as HTML or Markdown. 
+When the document is "rendered" by Knitr, the code chunks written in a language such
+as R are replaced by the results of their evaluation. 
+A [large ecosystem of tools](https://cran.r-project.org/web/views/ReproducibleResearch.html) 
+have been developed in the R community for formatting various analysis objects into the markup 
+representation.
+
+One constraint imposed by such "*document-driven*" reporting approach is that the
+flow of the analysis is controlled by the linear structure of the template document. Generation of the
+reporting output from the embedded code will normally proceed from the top to the bottom of the 
+document without branching or looping.
+
+Recognizing a frequent need for a more flexible control over the flow of the report generation, knitr introduces 
+both conditional evaluation tags and references between the chunks of code in the document. However, applying this advanced 
+functionality imposes on the users an additional layer of programming that has to be done in a limited domain specific 
+language (DSL) implicitly defined by the available knitr tags. The users have to learn this DSL and manage to express with it their reporting
+workflows. This has to happen despite the fact that they are already writing their code chunks in the 
+powerful general purpose programming language such as R.
+
+The situation is similar with the very popular Python-centric literate programming framework [Jupyter Notebooks](http://jupyter.org/).
+
+In our own everyday data analysis work in a bioinformatics research environment, we encounter a frequent pattern of activity where 
+the report generation has to be embedded into a fairly complicated analysis workflow developed in a general purpose
+programming language such as R or Python. As the analysis proceeds through multiple stages such as data loading, 
+data cleaning and the application of the same or different computations to the subsets of data, we often need to:
+
+- Report on various transient data elements that are being generated deeply inside the nested function calls, loops and conditional branches
+- Organize the report in a hierarchical structure to make viewing of a large report practical, even when the report includes tens of
+  thousands of plots and tables
+- Make both the reporting process and the analysis fully automated, so that it is easy to present the updated results to our
+  research collaborators in frequent iterative discussions
+- Have the report in a format that can be easily archived and viewed in another location by the collaborators without any need for an additional 
+  backend infrastructure such as the database or Web application servers
+- Keep the effort required to either add or modify the reporting instructions for **both structure and content** of the report very low compared 
+  to the effort that we are willing to dedicate to developing the analysis itself. As a reasanoble trade off, we are willing to tolerate an
+  auto-generated document layout that will not be as polished as a layout coming from a hand-tuned document template.
+
+We have developed the R package `anrepr` that meets all of the above requirements by adopting the "*analysis-driven*" reporting approach.
+In this approach, the analysis code is instrumented by including calls to our R package functions wherever the output has to be
+reported during the analysis execution. The reporting becomes an integral and unobtrusive part of the analysis workflow.
+
+Our package was in part inspired by the existing R packages [Nozzle](https://cran.r-project.org/package=Nozzle.R1) and 
+[pander](https://CRAN.R-project.org/package=pander), and it relies heavily on the Markdown generation methods provided by `pander`.
+
+For example, the `Nozzle` package has implemented the "*analysis-driven*" reporting concept by providing an R API that directly generates 
+rich HTML reports. `Nozzle` has implemented many advanced and specialized features such as dedicated presentation of the results
+that were marked as "signficant" by the analysis pipeline and on-demand filtering-out of the sections marked as "private data".
+The polished and thought-out JavaScript user interface (UI) of the `Nozzle` reports comes at a price of having many 
+decisions hard-wrired at the HTML presentation layer, such as relying on a combination of JQuery and Nozzle's own JavaScript
+libraries to control the UI elements. The `Nozzle` also creates a fixed top level HTML DOM structure that might fit perfectly
+the requirements of the sample processing pipeline at the Broad Institute where this package was created, but not necessarily
+fit well all other applications.
+
+The `Nozzle` API provides a method for inserting report elements containing arbitrary HTML chunks for those users which
+have sufficient skills for manipulating the HTML code.
+
+In our work, we have adopted the approach taken by the `pander` package that provided a report generator class `Pandoc`. Our `anrep` class
+can be viewed as a complete reimplementation of the `pander::Pandoc` class. The primary difference is that we provide automation 
+for building a hierarchical structure for the reports, generating auto-numbered sections, captions and anchor links for all inserted
+objects, and maintaining consistency of the numbering even in the presence of error conditions during execution of the analysis code.
+The `pander::Pandoc` does not provide any facilities for structuring the report beyond a generic ability for inserting  
+header tags. 
+
+The `pander::Pandoc` saves the entire report into a single file, which makes the final HTML reports impossible to
+load into the Web browser when the number of plots or table rows inserted by the analysis pipeline becomes too large. The same
+single-file scalability problem will be faced by the `Nozzle` report, where the documentation advises the users to trim down 
+the size of the tables that they are inserting from their analysis pipeline.
+
+Our class API provides protection against such viewer scalability issues in two ways:
+
+- The user can tag any newly created section of the report in the API call as a "Subreport", in which case it will be saved into a separate file in
+  most final output formats. The subreport will be linked from the parent report in case of HTML output.
+- The number of table rows inserted into the Markdown file will be limited to a default number of 200 (this can be overridden by the user
+  for each table). The full-size dataset will be always saved as a comma-delimited file in the report data directory and linked from the
+  table caption.
+- The htmlwidget object can be marked as "link-only" by the user if it is expected to be very expensive to render in the browser (for 
+  example, if it is a multiple alignment object with thousands of sequences). In that case it will be only saved in a separate file and
+  linked from its caption in the parent report.
+
+
+The fundamental distinction of our work from `Nozzle` is that our `anrep` class (as well as the `pander::Pandoc` class) emits Markdown text 
+instead of HTML. Using Markdown aims to create more separation between content generation and the final presentation format that is typically
+expected with the HTML output.
+
+Package-level functions in `pander` can be used to automatically convert a multitude of R data types into Markdown with a single
+call. That includes extraction of vector and raster images from plot objects produced by the major R graphing libraries. 
+Using a well-known external `Pandoc` converter utility, our report in the Markdown format is automatically converted into any of multiple final 
+presentation formats, such as HTML pages and slide shows, or Word and PDF documents. New style sheet file and JavaScript libraries can be supplied 
+to completely change the appearance and behaviour of the rendered HTML pages. Our Markdown reports can be also embedded into 
+'Knitr' documents or even loaded as active content into a Shiny application. Users can add their own arbitrary Markdown text into 
+the report. Markdown is very easy to write considering the simplicity of its syntax relative to, for example, HTML.
+
+We have implemented dedicated methods in our `anrep` class for adding to the report the most frequently used R datatypes such as data frames, vectors and
+plots with a single function call. That call generates Markdown content with a numbered caption and anchor, saves the full size element version on disk and 
+links it from the caption, and 
+seemlessly takes care of various edge cases that have to be taken into an account when directly using the conversion methods from the `pander` package. 
+One of our class methods inserts R objects from a growing collection of packages which implement the `htmlwidgets` interface, thus allowing generating
+a rich set of dynamic JavaScript elements in the final HTML reports.
+
 
 # The minimal `Hello World` example
 
-*The code and its rendered output as shown below the code.*
+*************************************************************************
+*Here is the example code. The rendered output follows the code.*
 
-```{r results="asis", warning = FALSE, message = FALSE, cache=FALSE}
+*************************************************************************
+
+```{r hello1, results="asis", warning = FALSE, message = FALSE, cache=FALSE}
 pander::panderOptions('knitr.auto.asis', FALSE)
 pander::evalsOptions("cache",F)
 library(anrepr)
@@ -30,28 +159,54 @@ report$add(with(mtcars,plot(mpg,hp)),caption="Hello Plot",graph.unify=T)
 report$save()
 ```
 
+*************************************************************************
+*End of the rendered output from the example code.*
 
-**Note** that in the `anrep` constructor above, we used `out.formats="knitr"`.
-This was done to generate the output that would get rendered by Knitr in
-this vignette document for demonstration purposes. The default intended mode, 
-however, is to let the `anrep$save`
-method call `Pandoc` conversion utility directly and generate a static Web
-site with multiple Web pages and data files, while running outside of Knitr. 
-That would have happened if we just used `report = anrep("Hello World")`. 
-You will be able to view the full auto-generated Web site following the link 
-provided for a large example script further in this document. For now, we will 
-use a couple of more Knitr-rendered examples for the purposes of introducing `anrep` 
-API features.
+*************************************************************************
 
 That Hello World example generated the following Markdown:
 
-
-```{r echo=FALSE, warning = FALSE, message = FALSE, cache=FALSE}
-report = anrep("Hello World",out.formats="knitr")
-report$add.table(mtcars[1:5,], caption="Hello Table")
-report$add(with(mtcars,plot(mpg,hp)),caption="Hello Plot",graph.unify=T)
-report$save()
+```{r hello1, echo=FALSE, message = FALSE, warning = FALSE, results='markup', comment=''}
 ```
+
+##Note on running under `Knitr`
+In the `anrep` constructor above, we have passed the `out.formats="knitr"` argument.
+This was done because we used [Knitr](https://cran.r-project.org/package=knitr)
+to generate this vignette directly from the code chunks inserted into a hand-written
+Markdown document.
+`out.formats="knitr"` option tells the `anrep` report object to stream its own 
+generated Markdown to the standard output. `Knitr` collects the output from 
+the code chunk and treats it as a ready-to-render Markdown because we marked the 
+corresponding Knitr chunk as having the result of type `asis`:
+
+` ```{r results="asis", warning = FALSE, message = FALSE, cache=FALSE} `
+```{r hello1, eval=FALSE}
+```
+` ``` `
+
+The `knitr` output mode also turns off the subreport (linked multiple documents) 
+generation and collects everything into a single Markdown document. Links to
+saved data files will not work if `devtools::build_vignettes()` call was used
+to generate a vignette for the R package.
+
+Note that we have used a couple of `pander` package options to turn off some
+auto-magic in `pander`. This was done to avoid a potential interference with 
+rendering in `Knitr` when processing collated output from multiple calls to `pander` 
+functions. `anrep` internally collates the output from multiple `pander` calls.
+
+This vignette document was built with `knitr` for demonstrating the `anrep` API. The default intended mode
+for the `anrep`, however, is to let the `anrep$save` method call `Pandoc` conversion utility directly 
+and generate a static Web site with multiple Web pages and data files, while running 
+outside of the `Knitr` environment. 
+
+This mode would have been used automatically if we just used `report = anrep("Hello World")`,
+or `report = anrep("Hello World",out.formats="html")`. This is how you should normally call the 
+`anrep` constructor when instrumenting your pipeline.
+
+You will be able to view such full auto-generated Web site following the link 
+provided for a large example script further in this document. For now, we will 
+use a couple of more Knitr-rendered examples for the purposes of introducing `anrep` 
+API features.
 
 # Generating subsections
 
@@ -65,28 +220,35 @@ block will be added to a new subsection one level deeper than what it was before
 block is finished. The default `add.header` call after that simply increments
 the section index at the current level.
 
-*The code and its rendered output as shown below the code.*
+*************************************************************************
+*Here is the example code. The rendered output follows the code.*
+
+*************************************************************************
 
 ```{r results="asis", warning = FALSE, message = FALSE, cache=FALSE}
 report = anrep("Hello World",out.formats="knitr")
-report$add.header("H1 Hello header")
+report$add.header("First Hello header")
 report$add.table(mtcars[1:5,], caption="Hello Table")
-report$add.header("H2 with subsections") %anrep>>% { 
-  report$add.header("Subsection under H2")
+report$add.header("Second header with subsections") %anrep>>% { 
+  report$add.header("Subsection under the second header")
   report$add.descr("**Computing stuff**", caption="Hello stuff")
   fit = lm(mpg~hp,mtcars)
   report$add(fit,caption = "Hello model")
-  report$add.header("Another subsection under H2")
+  report$add.header("Another subsection under the second header")
   report$add(with(mtcars,plot(mpg,hp)), caption="Hello Plot",graph.unify=T)
 }
-report$add.table(mtcars[5:10,], caption="Back at the original section level, Hello Table Again")
-report$add.header("H3 incremented at the same level")
+report$add.table(mtcars[5:10,], caption="We are back at the original section level. Hello Table Again")
+report$add.header("Third header, auto-incremented at the same level as the second header")
 report$add.printed(lm(mpg~hp,mtcars),caption = "Hello model again")
 report$save()
 ```
 
+*************************************************************************
+*End of the rendered output from the example code.*
 
-# A big example with Subreports
+*************************************************************************
+
+# The larger example with Subreports
 
 A worked example source file is included with the package, and can be located with this command:
 
@@ -109,14 +271,17 @@ knitr::read_chunk(example_code_file)
 ```{r example_sections_report_functions, cache=FALSE, results="hide", warning = FALSE, message = FALSE, comment=NA}
 ```
 
-After defining the functions, we run the report generation pipeline that we setup above. In this vignette code,
-we told it not to export the generated Markdown code into HTML, in order to avoid
-dependency on the external Pandoc executable.
+After defining the functions above, we run the report generation pipeline expressed by these functions. In this vignette code,
+we told the pipeline *not* to export the generated Markdown code into HTML, in order to avoid
+dependency on the external Pandoc executable on the system where this vignette code might be checked.
+
 ```{r cache=FALSE, results="hide", warning = FALSE, message = FALSE}
 make_example_sections_report("example_sections_report",export=F)
 ```
 
-During actual use on your own system where you installed Pandoc, you would instead call:
+During actual use on your own system where you installed Pandoc, you would instead use the following call to produce 
+the output Web site:
+
 ```{r eval=FALSE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
 make_example_sections_report("example_sections_report")
 ```
