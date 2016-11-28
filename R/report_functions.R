@@ -156,7 +156,7 @@ anrep.str_to_file_name <- function(x,max.length=0) {
 #' with reporting section more clear, and protect from future implementation changes
 #' if they introduce the internal cleanup code
 #' @param header_call Call to \code{anrep$header()}
-#' @param expr Code section that be reporting under the new subsection
+#' @param expr Code section that will be reporting under the new subsection
 #'
 #' @export
 #'
@@ -175,7 +175,7 @@ anrep.str_to_file_name <- function(x,max.length=0) {
 #' Infix operator to wrap a report sub-section code block (Header 1.1 >> Subheader 1.1.1)
 #'
 #' @param header_call Call to \code{anrep$header()}
-#' @param expr Code section that be reporting under the new subsection
+#' @param expr Code section that will be reporting under the new subsection
 #'
 #' @export
 #'
@@ -188,7 +188,8 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   header_call[["section.action"]] = "push"
   header_call[["sub"]] = F
   .report = eval(header_call,envir = env)
-  on.exit({invisible(.report$pop.section())})
+  latest.section = .report$get.section()
+  on.exit({.report$set.section(latest.section); invisible(.report$pop.section())})
   ## wrap user code in its own function to protect
   ## our on.exit() handler in case user code uses
   ## on.exit without `add=T`
@@ -198,7 +199,7 @@ anrep.str_to_file_name <- function(x,max.length=0) {
 #' Infix operator to wrap a sub-report code block (Header 1.1 // Subreport Header 1.1.1)
 #'
 #' @param header_call Call to \code{anrep$header()}
-#' @param expr Code section that be reporting under the new subsection
+#' @param expr Code section that will be reporting under the new subsection
 #'
 #' @export
 #'
@@ -211,7 +212,8 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   header_call[["section.action"]] = "push"
   header_call[["sub"]] = T
   .report = eval(header_call,envir = env)
-  on.exit({invisible(.report$pop.section())})
+  latest.section = .report$get.section()
+  on.exit({.report$set.section(latest.section); invisible(.report$pop.section())})
   ## wrap user code in its own function to protect
   ## our on.exit() handler in case user code uses
   ## on.exit without `add=T`

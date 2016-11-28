@@ -252,6 +252,11 @@ anrep$methods(get.section = function() {
   invisible(.self$section.path)
 })
 
+anrep$methods(set.section = function(x) {
+  .self$section.path = x
+  invisible(.self$section.path)
+})
+
 anrep$methods(incr.section = function(has.header=NULL) {
   .self$section.path = incr.section.path(.self$section.path,has.header=has.header)
   invisible(.self$section.path)
@@ -321,10 +326,16 @@ anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=F
 
 })
 
-anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL) {
+anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL, collapse=", ", elements=F) {
   if(is.null(caption)) {
     caption = ""
   }
+  if(!is.null(collapse)) {
+    caption = paste0(caption,collapse = collapse)
+  }
+  anchor = NULL
+  ind = NULL
+  anchor.name=NULL
   if(!is.null(caption)) {
     if(is.null(type)) {
       type = ""
@@ -350,8 +361,14 @@ anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL) {
       caption = paste(caption,".",sep="")
     }
   }
-
-  return (caption)
+  if(!elements) return (caption)
+  else {
+    return (list(caption=caption,
+                anchor=anchor,
+                anchor.name=anchor.name,
+                ind=ind)
+    )
+  }
 })
 
 
@@ -538,7 +555,8 @@ anrep$methods(make.file.name = function(name.base="",
                                         make.unique=T,
                                         dir=NULL,
                                         sec.path=NULL,
-                                        name.base.first=F) {
+                                        name.base.first=F,
+                                        name.ext="") {
   "Return new file name that you can use to write your data to be included with the report.
 
   parameter: name.base Basename for the file. If make.unique is TRUE, extra suffix will be generated to
@@ -571,14 +589,27 @@ anrep$methods(make.file.name = function(name.base="",
   else {
     fn.comps = c(fn.start,name.base)
   }
-  fn.comps[1] = sprintf("%s-",fn.comps[1])
+  fn.comps = paste0(fn.comps,collapse = "-")
   if(make.unique) {
-    fn = tempfile.unix(fn.comps[1],tmpdir=dir,fileext=fn.comps[2])
+    fn.comps = sprintf("%s-",fn.comps)
+    fn = tempfile.unix(fn.comps,tmpdir=dir,fileext=name.ext)
   }
   else {
-    fn = file.path(dir,paste0(fn.comps,collapse = ""),fsep="/")
+    fn = file.path(dir,paste0(fn.comps,name.ext),fsep="/")
   }
   return(fn)
+})
+
+anrep$methods(make.file.name.base.from.string = function(x) {
+  name.base = anrep.str_to_file_name(x,20)
+  ## strip all tail dots since we usually add extension later on
+  gsub("\\.+$","",name.base)
+})
+
+anrep$methods(make.file.name.base.from.caption.elements = function(x) {
+  if(!is.null(x$anchor.name)) s = x$anchor.name
+  else s = x$caption
+  .self$make.file.name.base.from.string(s)
 })
 
 anrep$methods(add.file = function(x,
@@ -664,7 +695,8 @@ anrep$methods(add.table = function(x,
     caption = anrep.escape.special(caption)
   }
 
-  caption = .self$format.caption(caption,type="table")
+  caption.el = .self$format.caption(caption,type="table",elements = T)
+  caption = caption.el$caption
 
   if(is.null(x) || nrow(x)==0) {
     if(!skip.if.empty) {
@@ -696,7 +728,7 @@ anrep$methods(add.table = function(x,
 
   if(export.to.file) {
     file.name = .self$write.table.file(x,
-                                       name.base=paste(anrep.str_to_file_name(caption,20),".csv",sep=""),
+                                       name.base=.self$make.file.name.base.from.caption.elements(caption.el),
                                        descr=NULL,
                                        row.names=show.row.names,
                                        row.names.header=T,
@@ -835,7 +867,7 @@ anrep$methods(write.table.file = function(data,
     row.names=F
   }
   if(is.null(file.name)) {
-    fn = .self$make.file.name(name.base,make.unique=make.unique)
+    fn = .self$make.file.name(name.base,make.unique=make.unique,name.ext=".csv",name.base.first = T)
   }
   else {
     fn = file.name

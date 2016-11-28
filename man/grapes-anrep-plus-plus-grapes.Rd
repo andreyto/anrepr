@@ -9,7 +9,7 @@ header_call \%anrep++\% expr
 \arguments{
 \item{header_call}{Call to \code{anrep$header()}}
 
-\item{expr}{Code section that be reporting under the new subsection}
+\item{expr}{Code section that will be reporting under the new subsection}
 }
 \description{
 This is not strictly necessary to use because default \code{anrep$header()}

@@ -9,7 +9,7 @@ header_call \%anrep//\% expr
 \arguments{
 \item{header_call}{Call to \code{anrep$header()}}
 
-\item{expr}{Code section that be reporting under the new subsection}
+\item{expr}{Code section that will be reporting under the new subsection}
 }
 \description{
 Infix operator to wrap a sub-report code block (Header 1.1 // Subreport Header 1.1.1)

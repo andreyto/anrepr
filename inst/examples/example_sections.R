@@ -27,6 +27,7 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
       # contain HTML anchor to reference it later inside the report if your need,
       # for example, to send a link to that plot to a collaborator.
       report$add(plot(x <- sort(rnorm(47))),caption="Figure one in H2",
+                 hi.res = T,
                  graph.unify=T)
 
       # Call deeper into the analysis pipeline
@@ -41,6 +42,7 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
 
     # Add a plot with base graphics
     report$add(plot(x <- sort(rnorm(10))),caption="Figure one in H3",
+               hi.res = T,
                graph.unify=T)
   }
 
@@ -81,7 +83,8 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
         if(requireNamespace("ggplot2", quietly = TRUE)) {
           report$add(ggplot2::qplot(mpg, wt, data = datasets::mtcars,
                                     facets = vs ~ am,geom = "violin"),
-                     caption = "Ggplot2 example")
+                     caption = "Ggplot2 example",
+                     hi.res = T)
         }
 
         # This simply adds a header and increments the section numbering

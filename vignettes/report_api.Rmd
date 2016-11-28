@@ -11,12 +11,12 @@ vignette: >
 
 # Scope
 
-This vignette demonstrates how you would initiate a report generation in your R code
-by creating the `anrep` class and using its methods for adding both structural and data
-elements to your report. 
+This vignette demonstrates how you can start a report generation in your R code
+by creating the `anrep` class, and then use the methods of this class to
+add both structural and data elements to your report. 
 
 Using the API is very similar to using a
-logging library to emit some information from different places in your code.
+typical logging library to emit some information from different places in your code.
 Only in this case, you are emitting rich content such as plots and tables, as well
 as organizing output into a hierarchical structure.
 
@@ -27,12 +27,13 @@ The report hierarchy is expressed through:
    in the `anrep` documentation).
 
 Overall, the feature set in the `anrepr` package allows easily equipping any arbitrarily 
-complex analysis pipeline with a graphical reporting facility. 
+complex analysis pipeline with a graphical reporting facility that emits report
+elements within functions, loops or conditional branches. 
 
 The typical final output
-is an auto-generated static Web site that contains linked HTML pages; embedded and stand-alone
+is an auto-generated static Web site that contains linked HTML pages, embedded and stand-alone
 versions of the plots as well as saved data files. The Web pages will contain dynamic Java Script
-elements if your code creates those R objects which implement the 
+elements if your code decides to report the types of R objects which implement the 
 [*htmlwidgets*](https://cran.r-project.org/package=htmlwidgets) 
 interface. The generated Web site directory is portable - it can be copied to other locations 
 or computers and viewed directly from disk, or it can be deployed to a Web server.
@@ -144,7 +145,7 @@ a rich set of dynamic JavaScript elements in the final HTML reports.
 
 # The minimal `Hello World` example
 
-This code adds to the report two pairs of tables and plots in a loop.
+This code adds to the report two pairs of tables and plots using a `for` loop.
 
 *************************************************************************
 *Here is the example code. The rendered output follows the code.*
@@ -154,12 +155,22 @@ This code adds to the report two pairs of tables and plots in a loop.
 ```{r hello1, warning = FALSE, message = FALSE, cache=FALSE}
 library(anrepr)
 report = anrep("Hello World")
-for(i in c(1,5)) {
-  report$add.table(mtcars[i:(i+5),],
-                   caption=sprintf("Hello Table for rows %s-%s",i,i+5))
-  report$add(with(mtcars[i:(i+5),],plot(mpg,hp)),
-             caption=sprintf("Hello Plot for rows %s-%s",i,i+5),graph.unify=T)
+set.seed(1)
+for(i in 1:2) {
+  rows = sample(nrow(mtcars),5)
+  
+  report$add.table(mtcars[rows,1:6],
+                   caption=sprintf("Hello Table for rows %s",
+                                   paste0(rows,collapse = ", ")),
+                   show.row.names = T)
+  
+  report$add(with(mtcars[rows,],plot(mpg,hp)),
+             caption=sprintf("Hello Plot for rows %s",
+                             paste0(rows,collapse = ", ")),
+             graph.unify=T,
+             hi.res=T)
 }
+
 # Printing the return value from the save() method will show
 # rendered Markdown if running under Knitr:
 report$save()
@@ -229,13 +240,13 @@ the section index at the current level.
 ```{r warning = FALSE, message = FALSE, cache=FALSE}
 report = anrep("Hello World")
 report$add.header("First Hello header")
-report$add.table(mtcars[1:5,], caption="Hello Table")
+report$add.table(mtcars[1:5,1:6], caption="Hello Table", show.row.names = T)
 # The operator %anrep>>% drops into a subsection:
 report$add.header("Second header with subsections") %anrep>>% { 
   report$add.header("Subsection under the second header")
-  report$add.descr("*Computing things here. Complex computations.*", caption="Starting complex computes")
+  report$add.descr("*Computing things here. Complex computations.*")
   fit = lm(mpg~hp,mtcars)
-  report$add.descr("*Having done computing. Took a while.*", caption="Finishing complex computes")
+  report$add.descr("*Having done computing. Took a while.*")
   report$add(fit,caption = "Hello model")
   report$add.header("Another subsection under the second header")
   report$add(with(mtcars,plot(mpg,hp)), caption="Hello Plot",graph.unify=T)
@@ -244,7 +255,7 @@ report$add.header("Second header with subsections") %anrep>>% {
 report$add.table(mtcars[5:10,], caption="We are back at the original section level. Hello Table Again")
 report$add.header("Third header, auto-incremented at the same level as the second header")
 report$add.printed(lm(mpg~hp,mtcars),caption = "Hello model again")
-report$save()
+report
 ```
 
 *************************************************************************

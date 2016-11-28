@@ -212,7 +212,7 @@ structure of your report.
   }
 
 \item{\code{make.file.name(name.base = "", make.unique = T, dir = NULL,
-  sec.path = NULL, name.base.first = F)}}{Return new file name that you can use to write your data to be included with the report.
+  sec.path = NULL, name.base.first = F, name.ext = "")}}{Return new file name that you can use to write your data to be included with the report.
 
   parameter: name.base Basename for the file. If make.unique is TRUE, extra suffix will be generated to
   make the final file name unique
