@@ -81,10 +81,23 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
 
         # Add a sample ggplot2 plot if the package is available
         if(requireNamespace("ggplot2", quietly = TRUE)) {
-          report$add(ggplot2::qplot(mpg, wt, data = datasets::mtcars,
+          report$add(ggplot2::qplot(mpg, wt, data = mtcars,
                                     facets = vs ~ am,geom = "violin"),
                      caption = "Ggplot2 example",
                      hi.res = T)
+        }
+
+        if(requireNamespace("DT", quietly = TRUE)) {
+          dt = DT::datatable(mtcars, options = list(pageLength = 15))
+          report$add.widget(dt,
+                            caption = "Dynamic DataTable viewer from DT package")
+        }
+
+        if(requireNamespace("plotly", quietly = TRUE)) {
+          report$add.widget(plotly::plot_ly(cbind(Model=rownames(mtcars),mtcars),
+                                            x = ~mpg, y = ~qsec, color = ~hp, size = ~wt,
+                                            text =~paste("Model:", Model, "<br>Weight:", wt)),
+                            caption = "Dynamic Plotly plot: hover, zoom and brush with your mouse")
         }
 
         # This simply adds a header and increments the section numbering

@@ -67,7 +67,8 @@ anrep <- setRefClass('anrep',
                        'section.path' = 'list',
                        'echo' = 'logical',
                        'under.knitr' = 'logical',
-                       'knitr.auto.asis' = 'logical'
+                       'knitr.auto.asis' = 'logical',
+                       'knitr.meta.attr' = 'list'
                      )
 )
 
@@ -128,6 +129,7 @@ anrep$methods(initialize = function(
   .self$echo = echo
   .self$under.knitr = F
   .self$knitr.auto.asis = knitr.auto.asis
+  .self$knitr.meta.attr = knitr.meta.attr
 
   if(!is.character(out.file)) {
     stop("The `out.file`` argument must be a string")
@@ -222,6 +224,14 @@ anrep$methods(priv.append.index = function(type) {
   }
   .self$object.index[[type]] = val + 1
   return(val)
+})
+
+anrep$methods(private.add.object = function(x) {
+  .self$priv.append.section()
+  .self$entries = c(.self$entries, list(
+    list(result = x))
+  )
+  invisible(x)
 })
 
 anrep$methods(private.add.paragraph = function(x) {
@@ -364,9 +374,9 @@ anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL, collaps
   if(!elements) return (caption)
   else {
     return (list(caption=caption,
-                anchor=anchor,
-                anchor.name=anchor.name,
-                ind=ind)
+                 anchor=anchor,
+                 anchor.name=anchor.name,
+                 ind=ind)
     )
   }
 })
@@ -406,24 +416,36 @@ anrep$methods(add.widget = function(x,
     stop("This method requires package htmlwidgets.")
   }
 
+  if(is.null(width)) {
+    width = pander::evalsOptions("width")
+  }
+
+  if(is.null(height)) {
+    height = pander::evalsOptions("height")
+  }
+
   if(new.paragraph) {
     .self$add.p("")
   }
 
-  name.base=paste(anrep.str_to_file_name(caption,20),".html",sep="")
+  caption.type = "widget"
 
-  fn = .self$make.file.name(name.base,dir=.self$widget.dir,make.unique=T)
+  caption.arg = caption
+  if(is.null(caption)) {
+    caption = ""
+  }
+
+  caption.el = .self$format.caption(caption,type=caption.type,elements = T)
+  caption = caption.el$caption
+
+  name.base=.self$make.file.name.base.from.caption.elements(caption.el)
+
+  fn = .self$make.file.name(name.base,dir=.self$widget.dir,make.unique=T,name.base.first = T,name.ext = ".html")
 
   htmlwidgets::saveWidget(x,fn,selfcontained = F,libdir=.self$widget.deps.dir)
 
   caption.res = sprintf("Click to see HTML widget file in full window: %s",
                         anrep.link.verbatim.return(fn))
-
-  caption.type = "widget"
-
-  if(!is.null(caption)) {
-    caption = .self$format.caption(caption,type=caption.type)
-  }
 
   caption = paste(caption,caption.res)
 
@@ -436,18 +458,15 @@ anrep$methods(add.widget = function(x,
     }
   }
 
-  if(!is.null(caption)) {
+  if(!is.null(caption.arg)) {
     .self$add.p(caption)
   }
-  if(show.inline) {
-    if(is.null(width)) {
-      width = pander::evalsOptions("width")
-    }
 
-    if(is.null(height)) {
-      height = pander::evalsOptions("height")
-    }
-    iframe.tpl = '<iframe style="max-width=100%"
+  if(show.inline) {
+
+    if(!.self$priv.is.knitr.output()) {
+
+      iframe.tpl = '<iframe style="max-width=100%"
         src="fn"
         sandbox="allow-same-origin allow-scripts"
         width="100%"
@@ -455,12 +474,26 @@ anrep$methods(add.widget = function(x,
         scrolling="no"
         seamless="seamless"
         frameBorder="0"></iframe>'
-    iframe.tpl = '<iframe src="%s" width="%s" height="%s"> </iframe>'
-    report$add(sprintf(iframe.tpl,
-                       fn,
-                       width,
-                       height))
+      iframe.tpl = '<iframe src="%s" width="%s" height="%s"> </iframe>'
+      .self$add(sprintf(iframe.tpl,
+                        fn,
+                        width,
+                        height))
+    }
+    else {
+
+      x_kp = htmlwidgets:::knit_print.htmlwidget(x)
+      .self$add.p(as.character(x_kp))
+
+      kn_at = attr(x_kp,"knit_meta")
+
+      if(!is.null(kn_at)) {
+        .self$knitr.meta.attr = c(.self$knitr.meta.attr,list(kn_at))
+      }
+    }
+
   }
+
   return(invisible(x))
 })
 
@@ -1127,6 +1160,10 @@ anrep$methods(save = function(out.file=NULL,
     if(first_defined_arg(knitr.auto.asis,.self$knitr.auto.asis)) {
       ret = knitr::asis_output(ret)
     }
+    for(kn_at in .self$knitr.meta.attr) {
+      knitr::knit_meta_add(kn_at)
+    }
+    attr(ret,"knit_meta") <- knitr::knit_meta()
   }
   else {
     ret = invisible(out.files)

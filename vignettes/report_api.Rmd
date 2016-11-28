@@ -220,7 +220,7 @@ You can use other output formats supported by `Pandoc` as values for the `out.fo
 but not all types of elements inserted into the generated Markdown are supported by every possible 
 Pandoc output format.
 
-# Generating subsections
+# Generating subsections and inserting `htmlwidgets`
 
 The report hierarchy is represented by nested sections as well as by subreports 
 (separate report files) linked from their parent reports. Creating another level
@@ -232,12 +232,15 @@ block will be added to a new subsection one level deeper than what it was before
 block is finished. The default `add.header` call after that simply increments
 the section index at the current level.
 
+At the end of this example, we will also add to the report a couple of dynamic plot widgets, 
+after testing that the corresponding widget packages are available in this R instance.
+
 *************************************************************************
 *Here is the example code. The rendered output follows the code.*
 
 *************************************************************************
 
-```{r warning = FALSE, message = FALSE, cache=FALSE}
+```{r warning = FALSE, message = F, cache=FALSE}
 report = anrep("Hello World")
 report$add.header("First Hello header")
 report$add.table(mtcars[1:5,1:6], caption="Hello Table", show.row.names = T)
@@ -253,10 +256,26 @@ report$add.header("Second header with subsections") %anrep>>% {
 # closing braces restores the previous section level
 }
 report$add.table(mtcars[5:10,], caption="We are back at the original section level. Hello Table Again")
+if(requireNamespace("threejs", quietly = TRUE)) {
+  z = seq(-10, 10, 0.01)
+  x = cos(z)
+  y = sin(z)
+  sp3 = threejs::scatterplot3js(x,y,z, color=rainbow(length(z)))
+  report$add.widget(sp3,
+                    caption = "ThreeJS widget. You can rotate it with your mouse.")
+}
 report$add.header("Third header, auto-incremented at the same level as the second header")
 report$add.printed(lm(mpg~hp,mtcars),caption = "Hello model again")
+if(requireNamespace("plotly", quietly = TRUE)) {
+  wd = plotly::plot_ly(cbind(Model=rownames(mtcars),mtcars),
+                                    x = ~mpg, y = ~qsec, color = ~hp, size = ~wt,
+                                    text =~paste("Model:", Model, "<br>Weight:", wt))
+  report$add.widget(wd,
+                    caption = "Dynamic Plotly plot: hover, zoom and brush with your mouse")
+}
 report
 ```
+
 
 *************************************************************************
 *End of the rendered output from the example code.*
@@ -291,7 +310,7 @@ below, we told the pipeline *not* to export the generated Markdown code into HTM
 dependency on the external Pandoc executable on the system where this vignette code might be automatically 
 checked (e.g. CRAN servers).
 
-```{r cache=FALSE, results="hide", warning = FALSE, message = FALSE}
+```{r eval=FALSE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
 make_example_sections_report("example_sections_report",export=F)
 ```
 

@@ -41,6 +41,20 @@ test_that("Sections work", {
                                       facets = vs ~ am,geom = "violin"),
                        caption = "Ggplot2 example")
           }
+
+          if(requireNamespace("DT", quietly = TRUE)) {
+            dt = DT::datatable(mtcars, options = list(pageLength = 15))
+            report$add.widget(dt,
+                              caption = "Dynamic DataTable viewer from DT package")
+          }
+
+          if(requireNamespace("plotly", quietly = TRUE)) {
+            report$add.widget(plotly::plot_ly(cbind(Model=rownames(mtcars),mtcars),
+                          x = ~mpg, y = ~qsec, color = ~hp, size = ~wt,
+                          text =~paste("Model:", Model, "<br>Weight:", wt)),
+                          caption = "Dynamic Plotly plot: hover, zoom and brush with your mouse")
+          }
+
           report$add.header("H2.1.subreport 1 incremented section")
           report$add.table(data.frame(A=c("a","b"),B=c(1,2)),caption="Table")
           report$add.descr(paste("File name with extra output is ",report$make.file.name("data.csv")))
