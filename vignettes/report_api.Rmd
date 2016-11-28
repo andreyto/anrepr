@@ -12,7 +12,7 @@ vignette: >
 # Scope
 
 This vignette demonstrates how you would initiate a report generation in your R code
-by creating the `anrep` class and use its methods for adding both structural and data
+by creating the `anrep` class and using its methods for adding both structural and data
 elements to your report. 
 
 Using the API is very similar to using a
@@ -144,18 +144,24 @@ a rich set of dynamic JavaScript elements in the final HTML reports.
 
 # The minimal `Hello World` example
 
+This code adds to the report two pairs of tables and plots in a loop.
+
 *************************************************************************
 *Here is the example code. The rendered output follows the code.*
 
 *************************************************************************
 
-```{r hello1, results="asis", warning = FALSE, message = FALSE, cache=FALSE}
-pander::panderOptions('knitr.auto.asis', FALSE)
-pander::evalsOptions("cache",F)
+```{r hello1, warning = FALSE, message = FALSE, cache=FALSE}
 library(anrepr)
-report = anrep("Hello World",out.formats="knitr")
-report$add.table(mtcars[1:5,], caption="Hello Table")
-report$add(with(mtcars,plot(mpg,hp)),caption="Hello Plot",graph.unify=T)
+report = anrep("Hello World")
+for(i in c(1,5)) {
+  report$add.table(mtcars[i:(i+5),],
+                   caption=sprintf("Hello Table for rows %s-%s",i,i+5))
+  report$add(with(mtcars[i:(i+5),],plot(mpg,hp)),
+             caption=sprintf("Hello Plot for rows %s-%s",i,i+5),graph.unify=T)
+}
+# Printing the return value from the save() method will show
+# rendered Markdown if running under Knitr:
 report$save()
 ```
 
@@ -164,49 +170,44 @@ report$save()
 
 *************************************************************************
 
-That Hello World example generated the following Markdown:
+*The raw generated Markdown from the Hello World example looks like this:*
 
-```{r hello1, echo=FALSE, message = FALSE, warning = FALSE, results='markup', comment=''}
+```{r, warning = FALSE, message = FALSE, cache=FALSE, comment=''}
+cat(report$save())
 ```
 
-##Note on running under `Knitr`
-In the `anrep` constructor above, we have passed the `out.formats="knitr"` argument.
-This was done because we used [Knitr](https://cran.r-project.org/package=knitr)
-to generate this vignette directly from the code chunks inserted into a hand-written
-Markdown document.
-`out.formats="knitr"` option tells the `anrep` report object to stream its own 
-generated Markdown to the standard output. `Knitr` collects the output from 
-the code chunk and treats it as a ready-to-render Markdown because we marked the 
-corresponding Knitr chunk as having the result of type `asis`:
+*************************************************************************
 
-` ```{r results="asis", warning = FALSE, message = FALSE, cache=FALSE} `
-```{r hello1, eval=FALSE}
-```
-` ``` `
+# About running under `Knitr`
 
-The `knitr` output mode also turns off the subreport (linked multiple documents) 
-generation and collects everything into a single Markdown document. Links to
+The report object detects that it is being executed from Knitr, and returns
+a string with the final Markdown from its `save()` method, automatically labeled
+to be passed for rendering `asis` (see the corresponding value for Knitr chunk 
+option `result`). This is why we had to use `cat` when we actually wanted to see 
+the raw Markdown text.
+
+The `knitr` output mode also turns off the generation of subreports (linked multiple documents) 
+and collects everything into a single Markdown string. As a side-note, links to
 saved data files will not work if `devtools::build_vignettes()` call was used
 to generate a vignette for the R package.
 
-Note that we have used a couple of `pander` package options to turn off some
-auto-magic in `pander`. This was done to avoid a potential interference with 
-rendering in `Knitr` when processing collated output from multiple calls to `pander` 
-functions. `anrep` internally collates the output from multiple `pander` calls.
-
 This vignette document was built with `knitr` for demonstrating the `anrep` API. The default intended mode
-for the `anrep`, however, is to let the `anrep$save` method call `Pandoc` conversion utility directly 
-and generate a static Web site with multiple Web pages and data files, while running 
-outside of the `Knitr` environment. 
+for the `anrep`, however, is to let the `anrep$save` method call [Pandoc](http://pandoc.org/) conversion 
+utility directly and generate a static Web site with multiple Web pages and data files, while running 
+outside of the `Knitr` environment. We call this `html` mode.
 
-This mode would have been used automatically if we just used `report = anrep("Hello World")`,
-or `report = anrep("Hello World",out.formats="html")`. This is how you should normally call the 
-`anrep` constructor when instrumenting your pipeline.
+The `html` mode would have been used automatically if we just called `report = anrep("Hello World")`
+outside of Knitr, or if we forced it with `report = anrep("Hello World",out.formats="html")` even
+when running under Knitr.
 
-You will be able to view such full auto-generated Web site following the link 
-provided for a large example script further in this document. For now, we will 
-use a couple of more Knitr-rendered examples for the purposes of introducing `anrep` 
+You will be able to view the results of `html` mode as a full auto-generated Web site following 
+the link provided for a large example script further in this document. For now, we will 
+use one more Knitr-rendered example for the purposes of introducing `anrep` 
 API features.
+
+You can use other output formats supported by `Pandoc` as values for the `out.formats` argument,
+but not all types of elements inserted into the generated Markdown are supported by every possible 
+Pandoc output format.
 
 # Generating subsections
 
@@ -225,17 +226,20 @@ the section index at the current level.
 
 *************************************************************************
 
-```{r results="asis", warning = FALSE, message = FALSE, cache=FALSE}
-report = anrep("Hello World",out.formats="knitr")
+```{r warning = FALSE, message = FALSE, cache=FALSE}
+report = anrep("Hello World")
 report$add.header("First Hello header")
 report$add.table(mtcars[1:5,], caption="Hello Table")
+# The operator %anrep>>% drops into a subsection:
 report$add.header("Second header with subsections") %anrep>>% { 
   report$add.header("Subsection under the second header")
-  report$add.descr("**Computing stuff**", caption="Hello stuff")
+  report$add.descr("*Computing things here. Complex computations.*", caption="Starting complex computes")
   fit = lm(mpg~hp,mtcars)
+  report$add.descr("*Having done computing. Took a while.*", caption="Finishing complex computes")
   report$add(fit,caption = "Hello model")
   report$add.header("Another subsection under the second header")
   report$add(with(mtcars,plot(mpg,hp)), caption="Hello Plot",graph.unify=T)
+# closing braces restores the previous section level
 }
 report$add.table(mtcars[5:10,], caption="We are back at the original section level. Hello Table Again")
 report$add.header("Third header, auto-incremented at the same level as the second header")
@@ -271,16 +275,17 @@ knitr::read_chunk(example_code_file)
 ```{r example_sections_report_functions, cache=FALSE, results="hide", warning = FALSE, message = FALSE, comment=NA}
 ```
 
-After defining the functions above, we run the report generation pipeline expressed by these functions. In this vignette code,
-we told the pipeline *not* to export the generated Markdown code into HTML, in order to avoid
-dependency on the external Pandoc executable on the system where this vignette code might be checked.
+After defining the functions above, we run the report generation pipeline expressed by these functions. In the call
+below, we told the pipeline *not* to export the generated Markdown code into HTML, in order to avoid
+dependency on the external Pandoc executable on the system where this vignette code might be automatically 
+checked (e.g. CRAN servers).
 
 ```{r cache=FALSE, results="hide", warning = FALSE, message = FALSE}
 make_example_sections_report("example_sections_report",export=F)
 ```
 
 During actual use on your own system where you installed Pandoc, you would instead use the following call to produce 
-the output Web site:
+the output Web site from our example pipeline:
 
 ```{r eval=FALSE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
 make_example_sections_report("example_sections_report")

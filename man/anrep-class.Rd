@@ -177,8 +177,8 @@ structure of your report.
   }
 
 \item{\code{initialize(title = "Analysis Report", author = "", date = base::date(),
-  out.file = "report", out.formats = c("html", "knitr"),
-  incremental.save = F, self.contained.html = T, echo = F, ...)}}{Construct new instance.
+  out.file = "report", out.formats = NULL, incremental.save = F,
+  self.contained.html = T, echo = F, knitr.auto.asis = T, ...)}}{Construct new instance.
 
   parameter: title Report title string
 
@@ -186,10 +186,21 @@ structure of your report.
 
   parameter: date of the report
 
-  parameter: out.formats Convert Markdown to these formats (using Pandoc binary executable). The only
-  format that supports all features of our generated Markdown is currently HTML, which will
-  be the default value. In particular, subreports and htmlwidgets will only work with HTML
-  output.
+  parameter: out.formats Convert generated Markdown to these formats (using Pandoc binary executable). In principle,
+  the value can be any of the output formats supported by Pandoc, plus an additional value `knitr`.
+  However, not all features of the report work in every format. If NULL, the default output format will be 'html',
+  unless we detect that we are executing from a Knitr session, in which case the format will be set to 'knitr'.
+  With 'html', the final output will be one or more HTML files on disk. With 'knitr', the method `anrep$save()`
+  will return a string with a single concatenated report (any subreport designations will be ignored). You can
+  also just type the report variable name or print it instead of calling `anrep$save()` method under Knitr.
+  If your are creating the report from Knitr but still want HTML output instead of a string, then set this parameter
+  explicitly to 'html'.
+
+  parameter: knitr.auto.asis This has the same effect as `pander::panderOptions` option with the same name. If set,
+  this report object will try to detect if it is being executed from knitr, and wrap the final returned
+  Markdown in knitr::asis_output class, so that Markdown is rendered as such, rather than as a literal string.
+  You would only want to set this to FALSE if you want to obtain the literal Markdown string under Knitr session
+  for viewing or further manipulation.
 
   parameter: self.contained.html Embed images (default resolution versions) and stylesheets into each HTML file.
   Note that generated data files and widget files will still be referenced by links. In any
@@ -217,7 +228,7 @@ structure of your report.
 
 \item{\code{save(out.file = NULL, out.formats = NULL, self.contained.html = NULL,
   pandoc.binary = NULL, css.file = NULL, export = T, concatenate = F,
-  pandoc.meta = T, sort.by.sections = F)}}{Save the report to Markdown and convert it to the final output formats.
+  pandoc.meta = T, knitr.auto.asis = NULL, sort.by.sections = F)}}{Save the report to Markdown and convert it to the final output formats.
 
   Call this at the end of your analysis.
 
@@ -262,6 +273,8 @@ structure of your report.
   parameter: concatenate Flatten all subreports into a single output file
 
   parameter: pandoc.meta Add Pandoc metadata header
+
+  parameter: knitr.auto.asis Same meaning as in the constructor
 
   return: data.frame with files names for all (sub)reports for all output formats, and a field named
   is_root that is set to TRUE for the row that is the root level report (the report

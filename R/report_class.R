@@ -56,7 +56,7 @@ anrep <- setRefClass('anrep',
                        'sections' = 'list',
                        'incremental.save' = 'logical',
                        'out.file' = 'character',
-                       'out.formats' = 'character',
+                       'out.formats' = 'ANY',
                        'self.contained.html' = 'logical',
                        'object.index' = 'list',
                        'data.dir' = 'character',
@@ -65,7 +65,9 @@ anrep <- setRefClass('anrep',
                        'widget.deps.dir' = 'character',
                        'resources.dir' = 'character',
                        'section.path' = 'list',
-                       'echo' = 'logical'
+                       'echo' = 'logical',
+                       'under.knitr' = 'logical',
+                       'knitr.auto.asis' = 'logical'
                      )
 )
 
@@ -74,10 +76,11 @@ anrep$methods(initialize = function(
   author = "",
   date = base::date(),
   out.file = "report",
-  out.formats = c("html","knitr"),
+  out.formats = NULL,
   incremental.save = F,
   self.contained.html=T,
   echo=F,
+  knitr.auto.asis=T,
   ...
 ) {
   "Construct new instance.
@@ -88,10 +91,21 @@ anrep$methods(initialize = function(
 
   parameter: date of the report
 
-  parameter: out.formats Convert Markdown to these formats (using Pandoc binary executable). The only
-  format that supports all features of our generated Markdown is currently HTML, which will
-  be the default value. In particular, subreports and htmlwidgets will only work with HTML
-  output.
+  parameter: out.formats Convert generated Markdown to these formats (using Pandoc binary executable). In principle,
+  the value can be any of the output formats supported by Pandoc, plus an additional value `knitr`.
+  However, not all features of the report work in every format. If NULL, the default output format will be 'html',
+  unless we detect that we are executing from a Knitr session, in which case the format will be set to 'knitr'.
+  With 'html', the final output will be one or more HTML files on disk. With 'knitr', the method `anrep$save()`
+  will return a string with a single concatenated report (any subreport designations will be ignored). You can
+  also just type the report variable name or print it instead of calling `anrep$save()` method under Knitr.
+  If your are creating the report from Knitr but still want HTML output instead of a string, then set this parameter
+  explicitly to 'html'.
+
+  parameter: knitr.auto.asis This has the same effect as `pander::panderOptions` option with the same name. If set,
+  this report object will try to detect if it is being executed from knitr, and wrap the final returned
+  Markdown in knitr::asis_output class, so that Markdown is rendered as such, rather than as a literal string.
+  You would only want to set this to FALSE if you want to obtain the literal Markdown string under Knitr session
+  for viewing or further manipulation.
 
   parameter: self.contained.html Embed images (default resolution versions) and stylesheets into each HTML file.
   Note that generated data files and widget files will still be referenced by links. In any
@@ -112,27 +126,33 @@ anrep$methods(initialize = function(
   .self$object.index=list(table=1,figure=1)
   .self$data.dir = "data"
   .self$echo = echo
+  .self$under.knitr = F
+  .self$knitr.auto.asis = knitr.auto.asis
 
   if(!is.character(out.file)) {
     stop("The `out.file`` argument must be a string")
   }
 
-  if(.self$out.formats[1]=="knitr") {
-    if(length(.self$out.formats)!=1) {
-      stop("Knitr can be only a single output format")
-    }
+  if(isTRUE(getOption('knitr.in.progress')) &&
+     requireNamespace('knitr', quietly = TRUE)) {
+    .self$under.knitr = T
   }
 
-  if(basename(out.file) != out.file) {
-    stop("out.file argument cannot have a directory component")
+  if(is.null(.self$out.formats)) {
+    if(.self$under.knitr) {
+      .self$out.formats = "knitr"
+    }
+    else {
+      .self$out.formats = "html"
+    }
   }
 
   cleanup.before = T
 
   if("knitr" %in% .self$out.formats) {
-    # For some reason under knitr deletion in successive
-    # reports steps on each other
-    # WARNING: probably need to generate unique dir names instead,
+    # For some reason when using devtools::build_vignettes(), deletion in successive
+    # reports steps on each other.
+    # WARNING: This is a temprary hack. We probably need to generate unique dir names instead,
     # but need to figure out what to do with graph.dir
     cleanup.before = F
   }
@@ -160,6 +180,29 @@ anrep$methods(initialize = function(
 
   callSuper(...)
 
+})
+
+anrep$methods(priv.is.knitr.output = function(out.formats=NULL) {
+  .out.formats = out.formats
+  ret = FALSE
+  if(is.null(.out.formats)) .out.formats = .self$out.formats
+  if("knitr" %in% .out.formats[1]) {
+    if(length(.out.formats)!=1) {
+      stop("Multiple output formats are not allowed when one of them is 'knitr'")
+    }
+    ret = TRUE
+  }
+  ret
+})
+
+anrep$methods(priv.enter.add = function() {
+  state = list(knitr.auto.asis = pander::panderOptions('knitr.auto.asis'))
+  pander::panderOptions('knitr.auto.asis', FALSE)
+  state
+})
+
+anrep$methods(priv.exit.add = function(state) {
+  if(state$knitr.auto.asis) pander::panderOptions('knitr.auto.asis', TRUE)
 })
 
 ## private service method - should be called whenever an element is
@@ -273,6 +316,7 @@ anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=F
     sec.path = .self$push.section(sub=sub,has.header=T)
   }
 
+  # need to return self for the infix operators to work
   invisible(.self)
 
 })
@@ -815,6 +859,7 @@ anrep$methods(save = function(out.file=NULL,
                               export=T,
                               concatenate=F,
                               pandoc.meta=T,
+                              knitr.auto.asis=NULL,
                               sort.by.sections=F) {
   "Save the report to Markdown and convert it to the final output formats.
 
@@ -862,6 +907,8 @@ anrep$methods(save = function(out.file=NULL,
 
   parameter: pandoc.meta Add Pandoc metadata header
 
+  parameter: knitr.auto.asis Same meaning as in the constructor
+
   return: data.frame with files names for all (sub)reports for all output formats, and a field named
   is_root that is set to TRUE for the row that is the root level report (the report
   from which the viewing has to start)
@@ -873,12 +920,13 @@ anrep$methods(save = function(out.file=NULL,
   .out.formats = first_defined_arg(out.formats,.self$out.formats,"html")
 
   out.file.arg = out.file
-  if(.out.formats[1]=="knitr") {
-    if(length(.out.formats)!=1) {
-      stop("Knitr can be only a single output format")
-    }
-    out.file.arg = stdout()
+
+  is.knitr.output = .self$priv.is.knitr.output()
+  if(is.knitr.output) {
     pandoc.meta = F
+    concatenate = T
+    # we now only stream Markdown, so no point in the export stage
+    export = F
   }
 
   if(inherits(out.file.arg,"connection")) out.streaming = T
@@ -893,6 +941,10 @@ anrep$methods(save = function(out.file=NULL,
   .out.file = first_defined_arg(if(out.streaming) NULL else out.file.arg,.self$out.file,"report")
 
   .self.contained.html = first_defined_arg(self.contained.html,.self$self.contained.html,T)
+
+  # reset and restore on exit some pander options such as knitr.auto.asis
+  state = .self$priv.enter.add()
+  on.exit(.self$priv.exit.add(state))
 
   fp    = .out.file
 
@@ -912,6 +964,13 @@ anrep$methods(save = function(out.file=NULL,
   }
 
   write.el = function(el,fp) {
+    #this is where knitr.asis should be already switched off, else
+    #we get attributes printed along with the strings.
+    #Note that pander_return is cat(pander()), and pander() is a generic default
+    #that acts as a wrapper - resets asis, calls the class methods, then
+    #wraps the results in asis, restores asis and returns.
+    #All other pander.class methods work in the opposite direction - they
+    #do cat(pander.class.return())
     el.str = pander::pander_return(el$result)
     cat(paste(el.str, collapse = '\n'),
         file = fp, append = TRUE)
@@ -1024,7 +1083,23 @@ anrep$methods(save = function(out.file=NULL,
     unlink(out.buffers)
     out.files[,out.streaming.format] = NA
   }
-  invisible(out.files)
+  if(is.knitr.output && is.null(out.file.arg)) {
+    ret = ""
+    out.buffers = out.files[[out.streaming.format]]
+    ## this actually should be only a single buffer since we use 'concatenate' for knitr
+    for(out.buffer in out.buffers) {
+      ret = c(ret,paste(readLines(out.buffer,warn = F),collapse = '\n'))
+    }
+    unlink(out.buffers)
+    out.files[,out.streaming.format] = NA
+    if(first_defined_arg(knitr.auto.asis,.self$knitr.auto.asis)) {
+      ret = knitr::asis_output(ret)
+    }
+  }
+  else {
+    ret = invisible(out.files)
+  }
+  ret
 })
 
 
