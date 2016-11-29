@@ -1,10 +1,10 @@
 ---
-title: "Tutorial on using main features of the anrep class API"
+title: "Anrepr Tutorial"
 author: "Andrey Tovchigrechko"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Tutorial on using main features of the anrep class API}
+  %\VignetteIndexEntry{Anrepr Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -40,14 +40,14 @@ or computers and viewed directly from disk, or it can be deployed to a Web serve
 
 # The reasons for creating this package
 
-Popular R frameworks like built-in Sweave and [RMarkdown](https://cran.r-project.org/package=rmarkdown) / 
+Popular R frameworks like Sweave and [RMarkdown](https://cran.r-project.org/package=rmarkdown) / 
 [Knitr](https://cran.r-project.org/package=knitr) packages greatly facilitate reproducible research and graphical 
 report generation by embedding analysis code into the documents written in a structured markup
-languages such as HTML or Markdown. 
-When the document is "rendered" by Knitr, the code chunks written in a language such
-as R are replaced by the results of their evaluation. 
+languages such as LaTex, Markdown or HTML.
+When the document is "rendered" by Knitr, the code chunks written in R are replaced by the results of their 
+evaluation. 
 A [large ecosystem of tools](https://cran.r-project.org/web/views/ReproducibleResearch.html) 
-have been developed in the R community for formatting various analysis objects into the markup 
+have been developed in the R community for automatically formatting various analysis objects into the markup 
 representation.
 
 One constraint imposed by such "*document-driven*" reporting approach is that the
@@ -66,19 +66,19 @@ The situation is similar with the very popular Python-centric literate programmi
 
 In our own everyday data analysis work in a bioinformatics research environment, we encounter a frequent pattern of activity where 
 the report generation has to be embedded into a fairly complicated analysis workflow developed in a general purpose
-programming language such as R or Python. As the analysis proceeds through multiple stages such as data loading, 
-data cleaning and the application of the same or different computations to the subsets of data, we often need to:
+programming language like R or Python. As the analysis proceeds through multiple stages of data loading, 
+data cleaning and the iterative application of the same or different algorithms to the subsets of data, we often need to:
 
 - Report on various transient data elements that are being generated deeply inside the nested function calls, loops and conditional branches
 - Organize the report in a hierarchical structure to make viewing of a large report practical, even when the report includes tens of
   thousands of plots and tables
 - Make both the reporting process and the analysis fully automated, so that it is easy to present the updated results to our
-  research collaborators in frequent iterative discussions
-- Have the report in a format that can be easily archived and viewed in another location by the collaborators without any need for an additional 
-  backend infrastructure such as the database or Web application servers
-- Keep the effort required to either add or modify the reporting instructions for **both structure and content** of the report very low compared 
-  to the effort that we are willing to dedicate to developing the analysis itself. As a reasanoble trade off, we are willing to tolerate an
-  auto-generated document layout that will not be as polished as a layout coming from a hand-tuned document template.
+  research collaborators in frequent development iterations 
+- Have the report in a format that can be easily archived and viewed offline in another location by the collaborators without any need 
+  for the custom desktop or server applications
+- Keep the effort required to either add or modify the reporting instructions for *both structure and content* of the report very low to let
+  us concentrate on developing the analysis code. As a reasanoble trade off, we are willing to tolerate for the bulk of the report an 
+  auto-generated document layout that might not be as polished as a layout coming out from a hand-tuned document template.
 
 We have developed the R package `anrepr` that meets all of the above requirements by adopting the "*analysis-driven*" reporting approach.
 In this approach, the analysis code is instrumented by including calls to our R package functions wherever the output has to be
@@ -94,17 +94,16 @@ The polished and thought-out JavaScript user interface (UI) of the `Nozzle` repo
 decisions hard-wrired at the HTML presentation layer, such as relying on a combination of JQuery and Nozzle's own JavaScript
 libraries to control the UI elements. The `Nozzle` also creates a fixed top level HTML DOM structure that might fit perfectly
 the requirements of the sample processing pipeline at the Broad Institute where this package was created, but not necessarily
-fit well all other applications.
+fit well all external applications.
 
 The `Nozzle` API provides a method for inserting report elements containing arbitrary HTML chunks for those users which
 have sufficient skills for manipulating the HTML code.
 
-In our work, we have adopted the approach taken by the `pander` package that provided a report generator class `Pandoc`. Our `anrep` class
+In our work, we have adopted the approach taken by the `pander` package that provided a class `Pandoc` for generating reports in Markdown format. Our `anrep` class
 can be viewed as a complete reimplementation of the `pander::Pandoc` class. The primary difference is that we provide automation 
 for building a hierarchical structure for the reports, generating auto-numbered sections, captions and anchor links for all inserted
-objects, and maintaining consistency of the numbering even in the presence of error conditions during execution of the analysis code.
-The `pander::Pandoc` does not provide any facilities for structuring the report beyond a generic ability for inserting  
-header tags. 
+objects. The consistency of the numbering is maintained even in the presence of error conditions during execution of the analysis code.
+In contrast, the `pander::Pandoc` does not provide any facilities for structuring the report beyond a generic ability for inserting header tags. 
 
 The `pander::Pandoc` saves the entire report into a single file, which makes the final HTML reports impossible to
 load into the Web browser when the number of plots or table rows inserted by the analysis pipeline becomes too large. The same
@@ -123,17 +122,21 @@ Our class API provides protection against such viewer scalability issues in two 
   linked from its caption in the parent report.
 
 
-The fundamental distinction of our work from `Nozzle` is that our `anrep` class (as well as the `pander::Pandoc` class) emits Markdown text 
+The most fundamental distinction of our work from `Nozzle` is that our `anrep` class (as well as the `pander::Pandoc` class) emits Markdown text 
 instead of HTML. Using Markdown aims to create more separation between content generation and the final presentation format that is typically
 expected with the HTML output.
 
-Package-level functions in `pander` can be used to automatically convert a multitude of R data types into Markdown with a single
-call. That includes extraction of vector and raster images from plot objects produced by the major R graphing libraries. 
-Using a well-known external `Pandoc` converter utility, our report in the Markdown format is automatically converted into any of multiple final 
-presentation formats, such as HTML pages and slide shows, or Word and PDF documents. New style sheet file and JavaScript libraries can be supplied 
-to completely change the appearance and behaviour of the rendered HTML pages. Our Markdown reports can be also embedded into 
-'Knitr' documents or even loaded as active content into a Shiny application. Users can add their own arbitrary Markdown text into 
-the report. Markdown is very easy to write considering the simplicity of its syntax relative to, for example, HTML.
+As a convenience, we provide infix operators for generating subsection and subreport hierarchy by wrapping blocks of the existing
+analysis code with curly braces. We found that feature a big help in the rapid development of multiple project-specific research 
+analysis pipelines with actively changing structure.
+
+Package-level functions from the `pander` package are used to automatically convert a multitude of R data types 
+into Markdown. That includes extraction of vector and raster images from plot objects produced by the major R graphing libraries. 
+The `save()` method of our report class calls the well-known external `Pandoc` converter utility to turn the Markdown output into any of multiple final presentation formats, such as HTML pages and slide shows, or Word and PDF documents. Custom style sheet files and JavaScript libraries can be supplied by the users to completely change the appearance and behaviour of the rendered HTML pages.
+
+Our report object detects if it is being ran from a `Knitr` document, and returns the entire assembled report to properly show up under `Knitr`, 
+including all inserted dynamic `htmlwidget` objects. Users can also insert their own arbitrary Markdown or HTML text into the report. 
+Markdown is very easy to write considering the simplicity of its syntax relative to, for example, HTML.
 
 We have implemented dedicated methods in our `anrep` class for adding to the report the most frequently used R datatypes such as data frames, vectors and
 plots with a single function call. That call generates Markdown content with a numbered caption and anchor, saves the full size element version on disk and 
@@ -145,7 +148,22 @@ a rich set of dynamic JavaScript elements in the final HTML reports.
 
 # The minimal `Hello World` example
 
-This code adds to the report two pairs of tables and plots using a `for` loop.
+This code adds to the report two pairs of tables and plots using a `for` loop. You can see in the report output rendered by `Knitr` that
+tables and plots were decorated with auto-generated captions. Consider, for example, this caption:
+
+"
+
+`(1.1)` <a name="table.2"></a>[`Table 2.`](#table.2) Hello Table for rows 29, 30, 20, 19, 2. Full dataset 
+is also saved in a delimited text file (click to download and open e.g. in Excel) 
+[`data/Table.2-1.1-1527b2eb7a167.csv`](data/Table.2-1.1-1527b2eb7a167.csv)
+
+"
+
+The caption starts with the current hierarchical numbering of the section where the corresponding object is contained at `(1.1)`. This is followed 
+by the auto-generated object index `Table 2` that runs through the entire report separately for each object type such as table or plot types. 
+In the HTML output, the object index is an anchor for sharing links to that place in the report. 
+After that, the user-provided descriptive text is inserted, followed by the link to an auto-generated data or image file that can be used in 
+downstream processing.
 
 *************************************************************************
 *Here is the example code. The rendered output follows the code.*
@@ -172,7 +190,8 @@ for(i in 1:2) {
 }
 
 # Printing the return value from the save() method will show
-# rendered Markdown if running under Knitr:
+# rendered Markdown if running under Knitr, else write HTML
+# and data files in the current directory.
 report$save()
 ```
 
@@ -193,14 +212,15 @@ cat(report$save())
 
 The report object detects that it is being executed from Knitr, and returns
 a string with the final Markdown from its `save()` method, automatically labeled
-to be passed for rendering `asis` (see the corresponding value for Knitr chunk 
-option `result`). This is why we had to use `cat` when we actually wanted to see 
+to be passed for rendering `asis` (matching the effect of the `result='asis'` 
+setting in the Knitr chunk options). This is why we had to use `cat` when we actually wanted to see 
 the raw Markdown text.
 
 The `knitr` output mode also turns off the generation of subreports (linked multiple documents) 
 and collects everything into a single Markdown string. As a side-note, links to
 saved data files will not work if `devtools::build_vignettes()` call was used
-to generate a vignette for the R package.
+to generate a vignette for the R package, due to the `devtools` expectations that the output
+must be a single file.
 
 This vignette document was built with `knitr` for demonstrating the `anrep` API. The default intended mode
 for the `anrep`, however, is to let the `anrep$save` method call [Pandoc](http://pandoc.org/) conversion 
@@ -212,13 +232,13 @@ outside of Knitr, or if we forced it with `report = anrep("Hello World",out.form
 when running under Knitr.
 
 You will be able to view the results of `html` mode as a full auto-generated Web site following 
-the link provided for a large example script further in this document. For now, we will 
-use one more Knitr-rendered example for the purposes of introducing `anrep` 
-API features.
+the [link](example_sections_report/report-1.html) provided for a larger example script further 
+in this document. For now, we will use one more Knitr-rendered example for the purposes of introducing 
+`anrep` API features.
 
 You can use other output formats supported by `Pandoc` as values for the `out.formats` argument,
-but not all types of elements inserted into the generated Markdown are supported by every possible 
-Pandoc output format.
+with a caveat that not all types of elements inserted into the generated Markdown are supported by 
+every possible Pandoc output format.
 
 # Generating subsections and inserting `htmlwidgets`
 
