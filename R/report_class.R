@@ -356,7 +356,7 @@ anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL, collaps
     }
     if(nzchar(ind)) {
       anchor = sprintf('%s.%s',type,ind)
-      anchor.name = sprintf("%s %s.",Hmisc::capitalize(type),ind)
+      anchor.name = sprintf("%s %s.",stringr::str_to_title(type),ind)
       name = anrep.anchor.return(anchor,anchor.name)
     }
     else {
