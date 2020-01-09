@@ -18,4 +18,3 @@ anrep.escape.special("_a_")
 anrep.escape.special("**a**[bbb](ccc)")
 anrep.escape.special("`a`")
 }
-

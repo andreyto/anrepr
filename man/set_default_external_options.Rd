@@ -10,4 +10,3 @@ set_default_external_options()
 This overrides various options in the \code{pander} package and changes
 the default ggplot2 theme.
 }
-

@@ -17,4 +17,3 @@ Return Markdown string with a generated anchor (using HTML tag)
 \examples{
 anrep.anchor.return("My_anchor","My anchor title")
 }
-

@@ -17,4 +17,3 @@ Return Markdown link, escaping the link title
 \examples{
 anrep.link.verbatim.return("my_link","**link title**")
 }
-

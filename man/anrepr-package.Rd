@@ -18,4 +18,7 @@ converter executable installed on your system. You can refer to the documentatio
 \href{https://CRAN.R-project.org/package=pander}{\pkg{pander}} package for
 the alternative ways of installing Pandoc.
 }
+\author{
+\strong{Maintainer}: Andrey Tovchigrechko \email{andreyto@gmail.com}
 
+}

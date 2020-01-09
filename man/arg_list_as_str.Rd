@@ -19,4 +19,3 @@ with wich some method was called by the user
 arg_list_as_str(list(a=1,b="bbb"))
 
 }
-

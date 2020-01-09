@@ -1,26 +1,4 @@
-make.global <- function(var=NULL,name=NULL,except=c("anrep.section")) {
-  if(is.null(var)) {
-    if(is.null(name)) {
-      name="global"
-    }
-    p.e = parent.frame()
-    if(name=="global") {
-      t.e = globalenv()
-      for(n in ls(p.e, all.names=TRUE)) {
-        if(! (n %in% except) ) assign(n, get(n, p.e), t.e)
-      }
-      return()
-    }
-    else {
-      var = as.environment(as.list(p.e, all.names=TRUE))
-    }
-  }
-  if(is.null(name)) {
-    name = deparse(substitute(var))
-  }
-  assign(name,var,envir=globalenv())
-}
-
+#' @importFrom utils capture.output citation str toBibtex
 
 are.automatic.rownames <- function(df) {
   all(rownames(df) == paste(seq(nrow(df))))
@@ -43,25 +21,25 @@ first_defined_arg <- function(...) {
   x[[ind[[1]]]]
 }
 
-#' Write citations for a vector of package names into file in BibTex format
-#' TODO can just use bibtex::write.bib
-#' TODO after writing (or before if BibTex allows that type), optionally replace
-#' Manual type with TechReport that Zotero understands in BibTex (converts to Report).
-#' Otherwise Zotero
-#' replaces Manual with Book. The replacement parameter should be a list of
-#' to:from tuples. In the path BibTex -> Zotero -> RIS -> Endnote Web Page
-#' gets converted to Journal Article still. It seems that in certain styles in
-#' EndNote (ACS), the only way too show URL is to set type to Web Page. Otherwise
-#' it is not clear at all that packages are CRAN packages.
+# Write citations for a vector of package names into file in BibTex format
+# TODO can just use bibtex::write.bib
+# TODO after writing (or before if BibTex allows that type), optionally replace
+# Manual type with TechReport that Zotero understands in BibTex (converts to Report).
+# Otherwise Zotero
+# replaces Manual with Book. The replacement parameter should be a list of
+# to:from tuples. In the path BibTex -> Zotero -> RIS -> Endnote Web Page
+# gets converted to Journal Article still. It seems that in certain styles in
+# EndNote (ACS), the only way too show URL is to set type to Web Page. Otherwise
+# it is not clear at all that packages are CRAN packages.
 citation.to.file <- function(package,file.name,append=F,...) {
   cit = unlist(sapply(package,function(p) toBibtex(citation(p,...))))
   write(cit,file.name,append=append)
 }
 
-#' Adopted from phyloseq code
-#' Computes text size of axis label based on the number of
-#' labels.
-#' Maybe R strwidth can be used even with ggplot2?
+# Adopted from phyloseq code
+# Computes text size of axis label based on the number of
+# labels.
+# Maybe R strwidth can be used even with ggplot2?
 calc.text.size <- function(n, mins=0.5, maxs=4, B=6, D=100){
   # empirically selected size-value calculator.
   s <- B * exp(-n/D)

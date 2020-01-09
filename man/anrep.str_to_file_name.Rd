@@ -17,4 +17,3 @@ Convert a string to a (more or less) valid file name
 \examples{
 anrep.str_to_file_name("My long $ and ! || && strange string")
 }
-

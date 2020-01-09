@@ -17,4 +17,3 @@ Return Markdown string with the argument printed verbatim
 \examples{
 anrep.as.printed.return("**Text**")
 }
-

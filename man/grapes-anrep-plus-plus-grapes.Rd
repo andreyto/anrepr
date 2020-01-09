@@ -19,6 +19,5 @@ with reporting section more clear, and protect from future implementation change
 if they introduce the internal cleanup code
 }
 \examples{
-## See \\code{\\link{anrep}} examples
+## See \code{\link{anrep}} examples
 }
-

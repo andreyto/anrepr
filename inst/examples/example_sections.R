@@ -95,7 +95,7 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
 
         if(requireNamespace("plotly", quietly = TRUE)) {
           report$add.widget(plotly::plot_ly(cbind(Model=rownames(mtcars),mtcars),
-                                            x = ~mpg, y = ~qsec, color = ~hp, size = ~wt,
+                                            x = ~mpg, y = ~qsec, color = ~hp, mode="markers", marker = list(size = ~wt),
                                             text =~paste("Model:", Model, "<br>Weight:", wt)),
                             caption = "Dynamic Plotly plot: hover, zoom and brush with your mouse")
         }

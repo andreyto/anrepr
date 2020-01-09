@@ -12,7 +12,8 @@ Encoding: UTF-8
 LazyData: true
 Imports:
     pander,
-    stringr
+    stringr,
+    methods
 Suggests:
     testthat,
     roxygen2,
@@ -22,7 +23,6 @@ Suggests:
     DT,
     plotly,
     threejs
-Enhances:
-    knitr
-RoxygenNote: 5.0.1
+SystemRequirements: Pandoc should be present in the OS to generate HTML reports    
+RoxygenNote: 7.0.2
 VignetteBuilder: knitr

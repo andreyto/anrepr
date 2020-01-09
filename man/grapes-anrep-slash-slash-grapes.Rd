@@ -15,6 +15,5 @@ header_call \%anrep//\% expr
 Infix operator to wrap a sub-report code block (Header 1.1 // Subreport Header 1.1.1)
 }
 \examples{
-## See \\code{\\link{anrep}} examples
+## See \code{\link{anrep}} examples
 }
-
