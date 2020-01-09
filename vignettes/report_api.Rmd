@@ -288,7 +288,7 @@ report$add.header("Third header, auto-incremented at the same level as the secon
 report$add.printed(lm(mpg~hp,mtcars),caption = "Hello model again")
 if(requireNamespace("plotly", quietly = TRUE)) {
   wd = plotly::plot_ly(cbind(Model=rownames(mtcars),mtcars),
-                                    x = ~mpg, y = ~qsec, color = ~hp, size = ~wt,
+                                    x = ~mpg, y = ~qsec, color = ~hp, mode="markers", marker = list(size = ~wt),
                                     text =~paste("Model:", Model, "<br>Weight:", wt))
   report$add.widget(wd,
                     caption = "Dynamic Plotly plot: hover, zoom and brush with your mouse")
