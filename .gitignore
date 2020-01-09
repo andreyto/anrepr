@@ -2,6 +2,11 @@
 .Rhistory
 .RData
 .Ruserdata
-tests_run
+tests_run_*
 .DS_Store
 inst/doc
+vignettes/data
+vignettes/plots
+vignettes/resources
+vignettes/widget_deps
+
