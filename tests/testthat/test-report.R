@@ -22,7 +22,7 @@ run_in_sandbox_dir <- function(expr,dir_name,cleanup=TRUE,make.unique.dir=TRUE) 
 
 }
 
-cleanup = F
+cleanup = T
 
 test_that("Sections work", {
   set_default_external_options()
@@ -66,6 +66,7 @@ test_that("Sections work", {
           report$add.descr(paste("File name with extra output is ",report$make.file.name("data.csv")))
         }
       }
+      testthat::expect_true(TRUE)
     }
 
     my.func.2<-function() {
@@ -75,6 +76,7 @@ test_that("Sections work", {
           my.func.3(sprintf("H2.1 two subreports here %s",i))
         }
       }
+      testthat::expect_true(TRUE)
     }
 
     my.func.1<-function() {
@@ -94,6 +96,7 @@ test_that("Sections work", {
     my.func.1()
 
     report$save()
+    testthat::expect_true(TRUE)
   })
 })
 
@@ -124,6 +127,7 @@ test_that("Tables work", {
                       show.row.names=F,wrap.vals=T,style="grid")
 
     report$save()
+    testthat::expect_true(TRUE)
 
   })
 
