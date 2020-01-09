@@ -11,12 +11,17 @@ License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Imports:
-    pander
+    pander,
+    stringr
 Suggests:
     testthat,
+    roxygen2,
     knitr,
     rmarkdown,
-    ggplot2
+    ggplot2,
+    DT,
+    plotly,
+    threejs
 Enhances:
     knitr
 RoxygenNote: 5.0.1
