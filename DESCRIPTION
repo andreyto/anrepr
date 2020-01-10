@@ -23,6 +23,12 @@ Suggests:
     DT,
     plotly,
     threejs
+VignetteBuilder:
+    knitr,
+    rmarkdown,
+    ggplot2,
+    DT,
+    plotly,
+    threejs
 SystemRequirements: Pandoc should be present in the OS to generate HTML reports    
 RoxygenNote: 7.0.2
-VignetteBuilder: knitr

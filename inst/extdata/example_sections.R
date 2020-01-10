@@ -162,5 +162,6 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
 
 # ---- example_sections_report_run ----
 
+#' \dontrun{
 make_example_sections_report("example_sections_report")
-
+#' }

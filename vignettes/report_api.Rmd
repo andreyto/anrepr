@@ -308,7 +308,7 @@ A worked example source file is included with the package, and can be located wi
 
 ```{r cache=FALSE}
 library(anrepr)
-example_code_file <- system.file("examples", "example_sections.R", package = "anrepr",mustWork = TRUE)
+example_code_file <- system.file("extdata", "example_sections.R", package = "anrepr",mustWork = TRUE)
 ```
 
 Below is the code listing of that example. The code uses the `anrep` class API calls to create a report
@@ -316,28 +316,26 @@ with multiple nested sections and subreports and to insert a few plots and table
 Look at the inline comments for the annotation of major steps.
 
 And by **[navigating to this link](example_sections_report/report-1.html)**, you can look at the rendered 
-HTML report that the code listed below has produced.
-
+HTML report that the code listed below has produced. In the installed package, the example report directory
+can be found with `system.file("doc", "example_sections_report", package = "anrepr")`, and the top-level
+report file in that directory is `report-1.html`.
 
 ```{r cache=FALSE, echo=FALSE}
-knitr::read_chunk(example_code_file)
+## Workaround from this: https://github.com/yihui/knitr/issues/1647
+rc <- knitr::read_chunk
+rc(example_code_file)
 ```
 ```{r example_sections_report_functions, cache=FALSE, results="hide", warning = FALSE, message = FALSE, comment=NA}
 ```
 
 After defining the functions above, we run the report generation pipeline expressed by these functions. In the call
-below, we told the pipeline *not* to export the generated Markdown code into HTML, in order to avoid
-dependency on the external Pandoc executable on the system where this vignette code might be automatically 
-checked (e.g. CRAN servers).
+below, the generated Markdown code will be converted into HTML only when Pandoc executable is available.
 
-```{r eval=FALSE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
-make_example_sections_report("example_sections_report",export=F)
-```
-
-During actual use on your own system where you installed Pandoc, you would instead use the following call to produce 
-the output Web site from our example pipeline:
-
-```{r eval=FALSE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
+```{r eval=TRUE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
 make_example_sections_report("example_sections_report")
 ```
-
+```{r eval=TRUE, cache=FALSE, results="hide", warning = FALSE, message = FALSE, echo=FALSE}
+rep_target <- "../inst/doc"
+dir.create(rep_target,recursive = TRUE,showWarnings = FALSE)
+file.copy("example_sections_report",rep_target,recursive=TRUE,overwrite = TRUE)
+```
