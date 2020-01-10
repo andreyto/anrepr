@@ -336,6 +336,7 @@ make_example_sections_report("example_sections_report")
 ```
 ```{r eval=TRUE, cache=FALSE, results="hide", warning = FALSE, message = FALSE, echo=FALSE}
 rep_target <- "../inst/doc"
+unlink(file.path(rep_target,"example_sections_report"),recursive = TRUE)
 dir.create(rep_target,recursive = TRUE,showWarnings = FALSE)
 file.copy("example_sections_report",rep_target,recursive=TRUE,overwrite = TRUE)
 ```
