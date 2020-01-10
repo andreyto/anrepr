@@ -331,12 +331,9 @@ rc(example_code_file)
 After defining the functions above, we run the report generation pipeline expressed by these functions. In the call
 below, the generated Markdown code will be converted into HTML only when Pandoc executable is available.
 
-```{r eval=TRUE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
+```{r eval=FALSE, cache=FALSE, results="hide", warning = FALSE, message = FALSE}
 make_example_sections_report("example_sections_report")
 ```
-```{r eval=TRUE, cache=FALSE, results="hide", warning = FALSE, message = FALSE, echo=FALSE}
-rep_target <- "../inst/doc"
-unlink(file.path(rep_target,"example_sections_report"),recursive = TRUE)
-dir.create(rep_target,recursive = TRUE,showWarnings = FALSE)
-file.copy("example_sections_report",rep_target,recursive=TRUE,overwrite = TRUE)
-```
+
+If all the optional graphics packages are available, the output report becomes too large to distribute with the package, 
+but you can browse the current copy at the [code repository on GitHub](https://github.com/andreyto/anrepr#example-report).

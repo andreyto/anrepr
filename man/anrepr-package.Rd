@@ -23,6 +23,10 @@ the alternative ways of installing Pandoc.
 
 make_example_sections_report <- function(report_dir=NULL,export=TRUE) {
 
+  # grDevices code to prevent stops when this example is checked by CRAN because
+  # apparently some code inside (pander?) closes all open devices, including one
+  # device that a checking wrapper opens and then tries to close after running the
+  # example.
   any.open.devs = !is.null(grDevices::dev.list())
 
   # First, we define several functions which will be called one from another,
