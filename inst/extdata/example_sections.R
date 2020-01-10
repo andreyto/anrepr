@@ -2,6 +2,12 @@
 
 make_example_sections_report <- function(report_dir=NULL,export=TRUE) {
 
+  # grDevices code to prevent stops when this example is checked by CRAN because
+  # apparently some code inside (pander?) closes all open devices, including one
+  # device that a checking wrapper opens and then tries to close after running the
+  # example.
+  any.open.devs = !is.null(grDevices::dev.list())
+
   # First, we define several functions which will be called one from another,
   # in order to mimic a flow of some typical analysis pipeline. Each
   # function uses our `report` object to add data to the report as well as
@@ -159,6 +165,12 @@ make_example_sections_report <- function(report_dir=NULL,export=TRUE) {
   # to the final HTML format. The report is organized as a number of files
   # and directories under the current working directory.
   report$save(export=export)
+
+  if(any.open.devs) {
+    if(is.null(grDevices::dev.list())) {
+      grDevices::pdf("dummy.pdf")
+    }
+  }
 }
 
 # ---- example_sections_report_run ----
