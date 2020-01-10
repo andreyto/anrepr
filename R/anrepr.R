@@ -10,5 +10,5 @@
 #' converter executable installed on your system. You can refer to the documentation of the
 #' \href{https://CRAN.R-project.org/package=pander}{\pkg{pander}} package for
 #' the alternative ways of installing Pandoc.
-#' #' @example inst/extdata/example_sections.R
+#' @example inst/extdata/example_sections.R
 "_PACKAGE"

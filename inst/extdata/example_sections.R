@@ -1,6 +1,6 @@
 # ---- example_sections_report_functions ----
 
-make_example_sections_report <- function(report_dir=NULL,export=T) {
+make_example_sections_report <- function(report_dir=NULL,export=TRUE) {
 
   # First, we define several functions which will be called one from another,
   # in order to mimic a flow of some typical analysis pipeline. Each
@@ -27,8 +27,8 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
       # contain HTML anchor to reference it later inside the report if your need,
       # for example, to send a link to that plot to a collaborator.
       report$add(plot(x <- sort(rnorm(47))),caption="Figure one in H2",
-                 hi.res = T,
-                 graph.unify=T)
+                 hi.res = TRUE,
+                 graph.unify=TRUE)
 
       # Call deeper into the analysis pipeline
       my.func.2()
@@ -42,8 +42,8 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
 
     # Add a plot with base graphics
     report$add(plot(x <- sort(rnorm(10))),caption="Figure one in H3",
-               hi.res = T,
-               graph.unify=T)
+               hi.res = TRUE,
+               graph.unify=TRUE)
   }
 
   ## This function is called from the top-level function
@@ -84,7 +84,7 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
           report$add(ggplot2::qplot(mpg, wt, data = mtcars,
                                     facets = vs ~ am,geom = "violin"),
                      caption = "Ggplot2 example",
-                     hi.res = T)
+                     hi.res = TRUE)
         }
 
         if(requireNamespace("DT", quietly = TRUE)) {
@@ -95,9 +95,10 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
 
         if(requireNamespace("plotly", quietly = TRUE)) {
           report$add.widget(plotly::plot_ly(cbind(Model=rownames(mtcars),mtcars),
-                                            x = ~mpg, y = ~qsec, color = ~hp, mode="markers", marker = list(size = ~wt),
-                                            text =~paste("Model:", Model, "<br>Weight:", wt)),
-                            caption = "Dynamic Plotly plot: hover, zoom and brush with your mouse")
+            x = ~mpg, y = ~qsec, color = ~hp, mode="markers",
+            marker = list(size = ~wt),
+            text =~paste("Model:", Model, "<br>Weight:", wt)),
+            caption = "Dynamic Plotly plot: hover, zoom and brush with your mouse")
         }
 
         # This simply adds a header and increments the section numbering
@@ -134,7 +135,7 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
   # restore the current working directory at the end
   if(!is.null(report_dir)) {
     curdir = getwd()
-    dir.create(report_dir,showWarnings = F,recursive = T)
+    dir.create(report_dir,showWarnings = FALSE,recursive = TRUE)
     on.exit(setwd(curdir))
     setwd(report_dir)
   }
@@ -162,6 +163,4 @@ make_example_sections_report <- function(report_dir=NULL,export=T) {
 
 # ---- example_sections_report_run ----
 
-#' \dontrun{
 make_example_sections_report("example_sections_report")
-#' }
