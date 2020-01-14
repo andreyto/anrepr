@@ -462,6 +462,7 @@ anrep$methods(add.widget = function(x,
 
   if(!is.null(caption.arg)) {
     .self$add.p(caption)
+    .self$add.p("")
   }
 
   if(show.inline) {
@@ -575,6 +576,7 @@ anrep$methods(add = function(x,
   }
   if(!is.null(caption)) {
     .self$add.p(caption)
+    .self$add.p("")
   }
   .self$entries = c(.self$entries,res)
   .self$priv.append.section()
