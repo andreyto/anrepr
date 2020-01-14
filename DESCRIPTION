@@ -1,9 +1,9 @@
 Package: anrepr
 Type: Package
-Title: Analysis Reporting in R
+Title: Analysis Reporting in R as a Hierarchical Graphical Logging
 Version: 0.1.0
 Authors@R: as.person("Andrey Tovchigrechko <andreyto@gmail.com>[aut, cre]")
-Description: A graphical loggin facility for saving dynamic and static plots, 
+Description: A hierarchical graphical logging facility for saving dynamic and static plots, 
     tables and other analysis outputs from arbitrary locations inside your 
     analysis code and generating as your final output a static Web site with
     multiple pages containing auto-numbered and linked sections, plots and tables.
