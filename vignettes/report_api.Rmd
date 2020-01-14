@@ -315,10 +315,8 @@ Below is the code listing of that example. The code uses the `anrep` class API c
 with multiple nested sections and subreports and to insert a few plots and tables.
 Look at the inline comments for the annotation of major steps.
 
-And by **[navigating to this link](example_sections_report/report-1.html)**, you can look at the rendered 
-HTML report that the code listed below has produced. In the installed package, the example report directory
-can be found with `system.file("doc", "example_sections_report", package = "anrepr")`, and the top-level
-report file in that directory is `report-1.html`.
+If all the optional graphics packages are available, the output report becomes too large to distribute with the package, 
+but you can browse the current copy at the [code repository on GitHub](https://github.com/andreyto/anrepr#example-report).
 
 ```{r cache=FALSE, echo=FALSE}
 ## Workaround from this: https://github.com/yihui/knitr/issues/1647
@@ -335,5 +333,3 @@ below, the generated Markdown code will be converted into HTML only when Pandoc 
 make_example_sections_report("example_sections_report")
 ```
 
-If all the optional graphics packages are available, the output report becomes too large to distribute with the package, 
-but you can browse the current copy at the [code repository on GitHub](https://github.com/andreyto/anrepr#example-report).
