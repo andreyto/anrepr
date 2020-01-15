@@ -18,7 +18,7 @@ RUN apt-get update \
 		r-base-dev \
 		r-recommended \
         r-cran-tikzdevice r-cran-knitr pandoc qpdf r-cran-devtools r-cran-testthat r-cran-xml2 \
-        r-cran-plotly r-cran-dt r-cran-ggplot2 r-cran-markdown git \
+        r-cran-plotly r-cran-dt r-cran-ggplot2 r-cran-markdown git r-cran-formatr \
 	&& ln -s /usr/lib/R/site-library/littler/examples/install.r /usr/local/bin/install.r \
 	&& ln -s /usr/lib/R/site-library/littler/examples/install2.r /usr/local/bin/install2.r \
 	&& ln -s /usr/lib/R/site-library/littler/examples/installGithub.r /usr/local/bin/installGithub.r \
