@@ -170,9 +170,9 @@ make_example_sections_report <- function(report_dir=NULL,export=TRUE) {
   # Create a report object visible from all functions that will need it.
   # Here it will be visible because it is bound to the frame in which the
   # functions were defined, but you can also pass it as a parameter (it is
-  # the instance of a reference class, and will not be copied), bind it
-  # to the global environment, or create a helper function to extract it from
-  # some other environment.
+  # the instance of a reference class, and will not be copied), assign it
+  # to the global environment using `<<-` operator, or create a helper
+  # function to extract it from some other environment.
   # Note that we set out.format to 'html' to make sure that we get the results in
   # HTML output files on disk even if this is executed from a knitr session
   # (otherwise under knitr we would get repot as a string return value)
