@@ -10,6 +10,8 @@ RUN ln -snf /usr/share/zoneinfo/Etc/UTC /etc/localtime \
     && rm -rf /var/lib/apt/lists/*
 
 ## DT needs to be reinstalled with install2.r - some dependency files are missing from deb
+## Same is for rmarkdown - devtools will still ask to install it after deb
+## dplyr is outdated and plotly is broken (extra dir level above the js library)
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends \
 		littler \
@@ -24,7 +26,7 @@ RUN apt-get update \
 	&& ln -s /usr/lib/R/site-library/littler/examples/installGithub.r /usr/local/bin/installGithub.r \
 	&& ln -s /usr/lib/R/site-library/littler/examples/testInstalled.r /usr/local/bin/testInstalled.r \
 	&& install.r docopt \
-    && install2.r pander roxygen2 threejs DT \
+    && install2.r pander roxygen2 threejs DT rmarkdown dplyr plotly \
 	&& rm -rf /tmp/downloaded_packages/ /tmp/*.rds \
 	&& rm -rf /var/lib/apt/lists/*
 
