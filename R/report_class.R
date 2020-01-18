@@ -80,10 +80,10 @@ anrep$methods(initialize = function(
   date = base::date(),
   out.file = "report",
   out.formats = NULL,
-  incremental.save = F,
-  self.contained.html=T,
-  echo=F,
-  knitr.auto.asis=T,
+  incremental.save = FALSE,
+  self.contained.html=TRUE,
+  echo=FALSE,
+  knitr.auto.asis=TRUE,
   ...
 ) {
   "Construct new instance.
@@ -129,7 +129,7 @@ anrep$methods(initialize = function(
   .self$object.index=list(table=1,figure=1)
   .self$data.dir = "data"
   .self$echo = echo
-  .self$under.knitr = F
+  .self$under.knitr = FALSE
   .self$knitr.auto.asis = knitr.auto.asis
   .self$knitr.meta.attr = knitr.meta.attr
 
@@ -139,7 +139,7 @@ anrep$methods(initialize = function(
 
   if(isTRUE(getOption('knitr.in.progress')) &&
      requireNamespace('knitr', quietly = TRUE)) {
-    .self$under.knitr = T
+    .self$under.knitr = TRUE
   }
 
   if(is.null(.self$out.formats)) {
@@ -151,21 +151,25 @@ anrep$methods(initialize = function(
     }
   }
 
-  cleanup.before = T
+  cleanup.before = TRUE
 
   if("knitr" %in% .self$out.formats) {
     # For some reason when using devtools::build_vignettes(), deletion in successive
     # reports steps on each other.
     # WARNING: This is a temprary hack. We probably need to generate unique dir names instead,
     # but need to figure out what to do with graph.dir
-    cleanup.before = F
+    cleanup.before = FALSE
   }
 
   #unlink(.self$data.dir,recursive=TRUE,force=TRUE)
   dir.create(.self$data.dir, showWarnings = FALSE, recursive = TRUE)
 
   .self$graph.dir = pander::evalsOptions("graph.dir")
-  if(cleanup.before) unlink(.self$graph.dir,recursive=TRUE,force=TRUE)
+  if(cleanup.before) {
+    if(file.exists(.self$graph.dir) && (normalizePath(getwd()) != normalizePath(.self$graph.dir))) {
+      unlink(.self$graph.dir,recursive=TRUE,force=TRUE)
+    }
+  }
   dir.create(.self$graph.dir, showWarnings = FALSE, recursive = TRUE)
 
   .self$widget.dir = "." #normalizePath(graph.dir,winslash = "/")
@@ -244,7 +248,7 @@ anrep$methods(private.add.paragraph = function(x) {
   invisible(x)
 })
 
-anrep$methods(add.p = function(x,rule=F,echo=NULL,...) {
+anrep$methods(add.p = function(x,rule=FALSE,echo=NULL,...) {
   "Add new paragraph
 
   parameter: x Text to write in the new paragraph
@@ -280,7 +284,7 @@ anrep$methods(incr.section.if.zero = function(has.header=NULL) {
   invisible(.self$get.section())
 })
 
-anrep$methods(push.section = function(sub=F,has.header=F) {
+anrep$methods(push.section = function(sub=FALSE,has.header=FALSE) {
   .self$section.path = push.section.path(.self$section.path,sub=sub,has.header=has.header)
   invisible(.self$section.path)
 })
@@ -290,7 +294,7 @@ anrep$methods(pop.section = function() {
   invisible(.self$section.path)
 })
 
-anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=F,echo=NULL,...) {
+anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=FALSE,echo=NULL,...) {
   "Add new header and automatically start new report section.
 
   You should rarely provide any arguments other than title.
@@ -313,8 +317,8 @@ anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=F
   }
 
   sec.path = switch(EXPR=section.action,
-                    incr=.self$incr.section(has.header = T),
-                    push=.self$incr.section(has.header = T),
+                    incr=.self$incr.section(has.header = TRUE),
+                    push=.self$incr.section(has.header = TRUE),
                     keep=.self$get.section())
 
 
@@ -338,7 +342,7 @@ anrep$methods(add.header = function(title,level=NULL,section.action="incr",sub=F
 
 })
 
-anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL, collapse=", ", elements=F) {
+anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL, collapse=", ", elements=FALSE) {
   if(is.null(caption)) {
     caption = ""
   }
@@ -386,13 +390,13 @@ anrep$methods(format.caption = function(caption,sec.path=NULL,type=NULL, collaps
 
 anrep$methods(add.widget = function(x,
                                     caption=NULL,
-                                    show.image.links=T,
+                                    show.image.links=TRUE,
                                     width = 800,
                                     height = 800,
-                                    new.paragraph=T,
+                                    new.paragraph=TRUE,
                                     data.export = NULL,
                                     data.export.descr = NULL,
-                                    show.inline = T,
+                                    show.inline = TRUE,
                                     ...) {
   "Add htmlwidget object.
 
@@ -437,14 +441,14 @@ anrep$methods(add.widget = function(x,
     caption = ""
   }
 
-  caption.el = .self$format.caption(caption,type=caption.type,elements = T)
+  caption.el = .self$format.caption(caption,type=caption.type,elements = TRUE)
   caption = caption.el$caption
 
   name.base=.self$make.file.name.base.from.caption.elements(caption.el)
 
-  fn = .self$make.file.name(name.base,dir=.self$widget.dir,make.unique=T,name.base.first = T,name.ext = ".html")
+  fn = .self$make.file.name(name.base,dir=.self$widget.dir,make.unique=TRUE,name.base.first = TRUE,name.ext = ".html")
 
-  htmlwidgets::saveWidget(x,fn,selfcontained = F,libdir=.self$widget.deps.dir)
+  htmlwidgets::saveWidget(x,fn,selfcontained = FALSE,libdir=.self$widget.deps.dir)
 
   caption.res = sprintf("Click to see HTML widget file in full window: %s",
                         anrep.link.verbatim.return(fn))
@@ -503,11 +507,11 @@ anrep$methods(add.widget = function(x,
 
 anrep$methods(add = function(x,
                              caption=NULL,
-                             show.image.links=T,
+                             show.image.links=TRUE,
                              caption.type=NULL,
                              graph.output = pander::evalsOptions("graph.output"),
                              hi.res = pander::evalsOptions("hi.res"),
-                             new.paragraph=T,
+                             new.paragraph=TRUE,
                              ...) {
   "Add plot object, or any other kind of object.
 
@@ -530,8 +534,8 @@ anrep$methods(add = function(x,
   }
   ## work around pander bug in v.0.6.0 where hi.res is created as a broken symlink plots/normal.res
   ## instead of just normal.res
-  if(graph.output == 'svg') {
-    hi.res = F
+  if(graph.output %in% c('svg','pdf')) {
+    hi.res = FALSE
   }
   res = pander::evals(deparse(match.call()[[2]]),env=env,
                       graph.output = graph.output,
@@ -542,7 +546,7 @@ anrep$methods(add = function(x,
     .self$add.p("")
   }
 
-  is.image = F
+  is.image = FALSE
   caption.res = ""
   for (r in res) {
     if(any(r$type=="image")) {
@@ -560,7 +564,7 @@ anrep$methods(add = function(x,
           )
         }
       }
-      is.image = T
+      is.image = TRUE
     }
   }
   if(is.null(caption.type)) {
@@ -589,10 +593,10 @@ anrep$methods(add.list = function(x,...) {
 })
 
 anrep$methods(make.file.name = function(name.base="",
-                                        make.unique=T,
+                                        make.unique=TRUE,
                                         dir=NULL,
                                         sec.path=NULL,
-                                        name.base.first=F,
+                                        name.base.first=FALSE,
                                         name.ext="") {
   "Return new file name that you can use to write your data to be included with the report.
 
@@ -614,7 +618,7 @@ anrep$methods(make.file.name = function(name.base="",
     name.base = ""
   }
   if(name.base=="" && !make.unique) {
-    stop("Need either non-empty name.base or make.unique=T")
+    stop("Need either non-empty name.base or make.unique=TRUE")
   }
   if(is.null(sec.path)) {
     sec.path = .self$get.section()
@@ -651,8 +655,8 @@ anrep$methods(make.file.name.base.from.caption.elements = function(x) {
 
 anrep$methods(add.file = function(x,
                                   caption=NULL,
-                                  wrap.caption=T,
-                                  skip.if.empty=F,
+                                  wrap.caption=TRUE,
+                                  skip.if.empty=FALSE,
                                   ...) {
   "Add a link to a file.
 
@@ -685,19 +689,68 @@ anrep$methods(add.file = function(x,
   return(.self$add.p(caption))
 })
 
+anrep$methods(add.image = function(x,
+                                  caption=NULL,
+                                  wrap.caption=TRUE,
+                                  skip.if.empty=FALSE,
+                                  width=pander::evalsOptions("width"),
+                                  height=NULL,
+                                  ...) {
+  "Add the image that already exists as a file.
+
+  It is recommended that the file name is generated with make.file.name method.
+
+  parameter: wrap.caption Escape Markdown tags in caption
+  parameter: height Default is NULL to let width define it without breaking aspect ratio
+  "
+
+  if(!is.na(caption)) {
+    if (wrap.caption && !is.null(caption)) {
+      caption = anrep.escape.special(caption)
+    }
+
+    caption = .self$format.caption(caption,type="dataset")
+
+    if(is.null(x)) {
+      if(!skip.if.empty) {
+        if(!is.null(caption)) {
+          .self$add.p(caption)
+        }
+        return(.self$add.p("Empty dataset"))
+      }
+      else {
+        return(.self)
+      }
+    }
+    caption = paste(caption,
+                    "Image is available in a file (click to download)",
+                    anrep.link.verbatim.return(x)
+    )
+
+    .self$add.p(caption)
+  }
+  if(!is.null(height)) {
+    img_attr = sprintf("width=%s height=%s",width,height)
+  }
+  else {
+    img_attr = sprintf("width=%s",width)
+  }
+  return(.self$add.p(sprintf("[![](%s){ %s }](%s)",x,img_attr,x)))
+})
+
 
 anrep$methods(add.table = function(x,
                                    caption=NULL,
                                    show.row.names=is.matrix(x),
-                                   wrap.caption=T,
-                                   wrap.vals=T,
-                                   export.to.file=T,
+                                   wrap.caption=TRUE,
+                                   wrap.vals=TRUE,
+                                   export.to.file=TRUE,
                                    file.name=NULL,
                                    show.first.rows=200,
                                    show.first.cols=200,
                                    split.tables=Inf,
                                    style="rmarkdown",
-                                   skip.if.empty=F,
+                                   skip.if.empty=FALSE,
                                    echo=NULL,
                                    ...) {
   "Add table object.
@@ -732,7 +785,7 @@ anrep$methods(add.table = function(x,
     caption = anrep.escape.special(caption)
   }
 
-  caption.el = .self$format.caption(caption,type="table",elements = T)
+  caption.el = .self$format.caption(caption,type="table",elements = TRUE)
   caption = caption.el$caption
 
   if(is.null(x) || nrow(x)==0) {
@@ -768,7 +821,7 @@ anrep$methods(add.table = function(x,
                                        name.base=.self$make.file.name.base.from.caption.elements(caption.el),
                                        descr=NULL,
                                        row.names=show.row.names,
-                                       row.names.header=T,
+                                       row.names.header=TRUE,
                                        file.name=file.name)
     caption = paste(caption,
                     "Full dataset is also saved in a delimited text file (click to download and open e.g. in Excel)",
@@ -778,11 +831,11 @@ anrep$methods(add.table = function(x,
 
   if(show.first.rows > 0) {
     if(inherits(x,"data.table")) x = x[1:show.first.rows]
-    else x = x[1:show.first.rows,,drop=F]
+    else x = x[1:show.first.rows,,drop=FALSE]
   }
   if(show.first.cols > 0) {
-    if(inherits(x,"data.table")) x = x[,1:show.first.cols,with=F]
-    else x = x[,1:show.first.cols,drop=F]
+    if(inherits(x,"data.table")) x = x[,1:show.first.cols,with=FALSE]
+    else x = x[,1:show.first.cols,drop=FALSE]
   }
 
   ## With data.table, I am getting this message:
@@ -803,7 +856,7 @@ anrep$methods(add.table = function(x,
     if(is.matrix(x)) {
       x = as.data.frame(x)
     }
-    x = sapply(x,anrep.escape.special,USE.NAMES=F,simplify=T)
+    x = sapply(x,anrep.escape.special,USE.NAMES=FALSE,simplify=TRUE)
     if(!is.matrix(x)) {
       x = t(as.matrix(x))
     }
@@ -820,7 +873,7 @@ anrep$methods(add.table = function(x,
 })
 
 anrep$methods(add.vector = function(x,name=NULL,
-                                    show.row.names=T,
+                                    show.row.names=TRUE,
                                     caption=NULL,
                                     ...) {
   "Add vector object.
@@ -838,7 +891,7 @@ anrep$methods(add.vector = function(x,name=NULL,
     names(y) = c(name)
   }
   if(is.null(names(x))) {
-    show.row.names = F
+    show.row.names = FALSE
   }
   if(show.row.names) {
     row.names(y) = names(x)
@@ -867,7 +920,7 @@ anrep$methods(add.package.citation = function(x,caption=NULL,...) {
 anrep$methods(add.printed = function(x,caption=NULL,echo=NULL,...) {
   "Add a chunk of text verbatim preserving it from Markdown formatting.
 
-  This is a lazy ecape hatch for situations where R function such as Anova
+  This is a lazy escape hatch for situations where R function such as Anova
   summary returns text carefully formatted with spaces and you want to
   include this formatted output instead of generating your own formatting
   with Markdown.
@@ -883,10 +936,10 @@ anrep$methods(add.printed = function(x,caption=NULL,echo=NULL,...) {
 
 anrep$methods(write.table.file = function(data,
                                           name.base,
-                                          make.unique=T,
+                                          make.unique=TRUE,
                                           descr=NULL,
-                                          row.names=F,
-                                          row.names.header=T,
+                                          row.names=FALSE,
+                                          row.names.header=TRUE,
                                           file.name=NULL,
                                           ...) {
   "Save table in a CSV text file.
@@ -901,10 +954,10 @@ anrep$methods(write.table.file = function(data,
   ## if we write row.names, Excel shifts header row to the left when loading
   if(row.names && row.names.header) {
     data = cbind(rownames=rownames(data),data)
-    row.names=F
+    row.names=FALSE
   }
   if(is.null(file.name)) {
-    fn = .self$make.file.name(name.base,make.unique=make.unique,name.ext=".csv",name.base.first = T)
+    fn = .self$make.file.name(name.base,make.unique=make.unique,name.ext=".csv",name.base.first = TRUE)
   }
   else {
     fn = file.name
@@ -925,11 +978,11 @@ anrep$methods(save = function(out.file=NULL,
                               self.contained.html=NULL,
                               pandoc.binary=NULL,
                               css.file=NULL,
-                              export=T,
-                              concatenate=F,
-                              pandoc.meta=T,
+                              export=TRUE,
+                              concatenate=FALSE,
+                              pandoc.meta=TRUE,
                               knitr.auto.asis=NULL,
-                              sort.by.sections=F) {
+                              sort.by.sections=FALSE) {
   "Save the report to Markdown and convert it to the final output formats.
 
   Call this at the end of your analysis.
@@ -983,7 +1036,7 @@ anrep$methods(save = function(out.file=NULL,
   from which the viewing has to start)
   "
 
-  out.streaming = F
+  out.streaming = FALSE
   out.streaming.format = "md"
 
   .out.formats = first_defined_arg(out.formats,.self$out.formats,"html")
@@ -992,18 +1045,18 @@ anrep$methods(save = function(out.file=NULL,
 
   is.knitr.output = .self$priv.is.knitr.output()
   if(is.knitr.output) {
-    pandoc.meta = F
-    concatenate = T
+    pandoc.meta = FALSE
+    concatenate = TRUE
     # we now only stream Markdown, so no point in the export stage
-    export = F
+    export = FALSE
   }
 
-  if(inherits(out.file.arg,"connection")) out.streaming = T
+  if(inherits(out.file.arg,"connection")) out.streaming = TRUE
 
   if(out.streaming) {
-    concatenate = T
+    concatenate = TRUE
     # we now only stream Markdown, so no point in the export stage
-    export = F
+    export = FALSE
   }
 
   ## If streaming, still use a real file as a temporary output
@@ -1061,10 +1114,10 @@ anrep$methods(save = function(out.file=NULL,
       sub.path = section[1:1]
     }
     fp.sub = .self$make.file.name(name.base=fp,
-                                  make.unique=F,
+                                  make.unique=FALSE,
                                   dir=".",
                                   sec.path=sub.path,
-                                  name.base.first=T)
+                                  name.base.first=TRUE)
     fp.sub.md = paste(fp.sub,".Rmd",sep="") #".md"
     #print(paste("fp.sub=",fp.sub))
 
@@ -1108,7 +1161,7 @@ anrep$methods(save = function(out.file=NULL,
       message("Exetutable file 'pandoc' must be found in the system PATH or in the location provided by you
          for the conversion from Markdown to other formats to work. Because pandoc binary is not found,
             Markdown will not be converted.")
-      export = F
+      export = FALSE
     }
   }
 
@@ -1147,7 +1200,7 @@ anrep$methods(save = function(out.file=NULL,
   if(out.streaming) {
     out.buffers = out.files[[out.streaming.format]]
     for(out.buffer in out.buffers) {
-      writeLines(readLines(out.buffer,warn = F),out.file.arg)
+      writeLines(readLines(out.buffer,warn = FALSE),out.file.arg)
     }
     unlink(out.buffers)
     out.files[,out.streaming.format] = NA
@@ -1157,7 +1210,7 @@ anrep$methods(save = function(out.file=NULL,
     out.buffers = out.files[[out.streaming.format]]
     ## this actually should be only a single buffer since we use 'concatenate' for knitr
     for(out.buffer in out.buffers) {
-      ret = c(ret,paste(readLines(out.buffer,warn = F),collapse = '\n'))
+      ret = c(ret,paste(readLines(out.buffer,warn = FALSE),collapse = '\n'))
     }
     unlink(out.buffers)
     out.files[,out.streaming.format] = NA

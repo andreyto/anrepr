@@ -9,22 +9,22 @@ set_default_external_options <- function() {
   pander::panderOptions("table.style","rmarkdown") #"grid"
   pander::panderOptions("table.split.table",Inf)
   pander::panderOptions("table.alignment.default","left")
-  pander::panderOptions("evals.messages",F)
+  pander::panderOptions("evals.messages",FALSE)
   pander::panderOptions("graph.fontsize",20)
-  pander::evalsOptions("cache",F)
+  pander::evalsOptions("cache",FALSE)
   pander::evalsOptions("cache.mode","environment")
   #pander::evalsOptions("output",c("result"))
   pander::evalsOptions("output",c("all"))
   pander::evalsOptions("graph.output","svg") #"png"
-  pander::evalsOptions("graph.unify",F)
+  pander::evalsOptions("graph.unify",FALSE)
   pander::evalsOptions("width",800) #800 #1000
   pander::evalsOptions("height",600) #640 #840
   pander::evalsOptions("res",75)
-  pander::evalsOptions("hi.res",T)
+  pander::evalsOptions("hi.res",TRUE)
   pander::evalsOptions("hi.res.width",1200)
-  pander::evalsOptions("graph.env",F)
-  pander::evalsOptions("graph.recordplot",F)
-  pander::evalsOptions("graph.RDS",F)
+  pander::evalsOptions("graph.env",FALSE)
+  pander::evalsOptions("graph.recordplot",FALSE)
+  pander::evalsOptions("graph.RDS",FALSE)
   ##using graph.name option causes seemingly unconnected
   ##errors starting with warnings like:
   ##`No pander method for "ggplot", reverting to default`
@@ -53,7 +53,7 @@ set_default_external_options <- function() {
 #'
 arg_list_as_str<-function(x,collapse=",") {
   paste("[",
-        paste(capture.output(str(x,no.list=T,comp.str="",give.attr=F,give.head=F)),collapse=collapse),
+        paste(capture.output(str(x,no.list=TRUE,comp.str="",give.attr=FALSE,give.head=FALSE)),collapse=collapse),
         "]",
         sep=""
   )
@@ -92,7 +92,7 @@ anrep.special.symb = "\\-\\[\\]`*_{}()#+!~"
 #' anrep.escape.special("`a`")
 anrep.escape.special <- function(x) {
   x = gsub(paste('([',anrep.special.symb,'])',sep=''),"\\\\\\1",
-           format(x,digits=pander::panderOptions("digits")),perl=T)
+           format(x,digits=pander::panderOptions("digits")),perl=TRUE)
   ##the only way to have backstick is table cells is to use special symbol
   gsub('[|]','&#124;',x)
 }
@@ -167,7 +167,7 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   header_call = substitute(header_call)
   expr = substitute(expr)
   header_call[["section.action"]] = "incr"
-  header_call[["sub"]] = F
+  header_call[["sub"]] = FALSE
   eval(header_call,envir = env)
   invisible(eval(expr, envir = env))
 }
@@ -186,13 +186,13 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   header_call = substitute(header_call)
   expr = substitute(expr)
   header_call[["section.action"]] = "push"
-  header_call[["sub"]] = F
+  header_call[["sub"]] = FALSE
   .report = eval(header_call,envir = env)
   latest.section = .report$get.section()
   on.exit({.report$set.section(latest.section); invisible(.report$pop.section())})
   ## wrap user code in its own function to protect
   ## our on.exit() handler in case user code uses
-  ## on.exit without `add=T`
+  ## on.exit without `add=TRUE`
   make_function(alist(), expr, env = env)()
 }
 
@@ -210,12 +210,12 @@ anrep.str_to_file_name <- function(x,max.length=0) {
   header_call = substitute(header_call)
   expr = substitute(expr)
   header_call[["section.action"]] = "push"
-  header_call[["sub"]] = T
+  header_call[["sub"]] = TRUE
   .report = eval(header_call,envir = env)
   latest.section = .report$get.section()
   on.exit({.report$set.section(latest.section); invisible(.report$pop.section())})
   ## wrap user code in its own function to protect
   ## our on.exit() handler in case user code uses
-  ## on.exit without `add=T`
+  ## on.exit without `add=TRUE`
   make_function(alist(), expr, env = env)()
 }

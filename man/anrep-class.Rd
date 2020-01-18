@@ -56,11 +56,11 @@ structure of your report.
 \item{\code{add(
   x,
   caption = NULL,
-  show.image.links = T,
+  show.image.links = TRUE,
   caption.type = NULL,
   graph.output = pander::evalsOptions("graph.output"),
   hi.res = pander::evalsOptions("hi.res"),
-  new.paragraph = T,
+  new.paragraph = TRUE,
   ...
 )}}{Add plot object, or any other kind of object.
 
@@ -79,7 +79,7 @@ structure of your report.
 
   Arguments to add.p method are accepted here}
 
-\item{\code{add.file(x, caption = NULL, wrap.caption = T, skip.if.empty = F, ...)}}{Add a link to a file.
+\item{\code{add.file(x, caption = NULL, wrap.caption = TRUE, skip.if.empty = FALSE, ...)}}{Add a link to a file.
 
   It is recommended that the file name is generated with make.file.name method.
 
@@ -90,7 +90,7 @@ structure of your report.
   title,
   level = NULL,
   section.action = "incr",
-  sub = F,
+  sub = FALSE,
   echo = NULL,
   ...
 )}}{Add new header and automatically start new report section.
@@ -110,9 +110,25 @@ structure of your report.
   of the anrep object.
   }
 
+\item{\code{add.image(
+  x,
+  caption = NULL,
+  wrap.caption = TRUE,
+  skip.if.empty = FALSE,
+  width = pander::evalsOptions("width"),
+  height = NULL,
+  ...
+)}}{Add the image that already exists as a file.
+
+  It is recommended that the file name is generated with make.file.name method.
+
+  parameter: wrap.caption Escape Markdown tags in caption
+  parameter: height Default is NULL to let width define it without breaking aspect ratio
+  }
+
 \item{\code{add.list(x, ...)}}{Add list object}
 
-\item{\code{add.p(x, rule = F, echo = NULL, ...)}}{Add new paragraph
+\item{\code{add.p(x, rule = FALSE, echo = NULL, ...)}}{Add new paragraph
 
   parameter: x Text to write in the new paragraph
   parameter: rule Also add horizontal rule
@@ -122,7 +138,7 @@ structure of your report.
 
 \item{\code{add.printed(x, caption = NULL, echo = NULL, ...)}}{Add a chunk of text verbatim preserving it from Markdown formatting.
 
-  This is a lazy ecape hatch for situations where R function such as Anova
+  This is a lazy escape hatch for situations where R function such as Anova
   summary returns text carefully formatted with spaces and you want to
   include this formatted output instead of generating your own formatting
   with Markdown.
@@ -134,15 +150,15 @@ structure of your report.
   x,
   caption = NULL,
   show.row.names = is.matrix(x),
-  wrap.caption = T,
-  wrap.vals = T,
-  export.to.file = T,
+  wrap.caption = TRUE,
+  wrap.vals = TRUE,
+  export.to.file = TRUE,
   file.name = NULL,
   show.first.rows = 200,
   show.first.cols = 200,
   split.tables = Inf,
   style = "rmarkdown",
-  skip.if.empty = F,
+  skip.if.empty = FALSE,
   echo = NULL,
   ...
 )}}{Add table object.
@@ -174,7 +190,7 @@ structure of your report.
   parameter: ... Passed to pander::pandoc.table.return
   }
 
-\item{\code{add.vector(x, name = NULL, show.row.names = T, caption = NULL, ...)}}{Add vector object.
+\item{\code{add.vector(x, name = NULL, show.row.names = TRUE, caption = NULL, ...)}}{Add vector object.
 
   Vector is added as a table. Parameters to add.table method are accepted here.
   }
@@ -182,13 +198,13 @@ structure of your report.
 \item{\code{add.widget(
   x,
   caption = NULL,
-  show.image.links = T,
+  show.image.links = TRUE,
   width = 800,
   height = 800,
-  new.paragraph = T,
+  new.paragraph = TRUE,
   data.export = NULL,
   data.export.descr = NULL,
-  show.inline = T,
+  show.inline = TRUE,
   ...
 )}}{Add htmlwidget object.
 
@@ -217,10 +233,10 @@ structure of your report.
   date = base::date(),
   out.file = "report",
   out.formats = NULL,
-  incremental.save = F,
-  self.contained.html = T,
-  echo = F,
-  knitr.auto.asis = T,
+  incremental.save = FALSE,
+  self.contained.html = TRUE,
+  echo = FALSE,
+  knitr.auto.asis = TRUE,
   ...
 )}}{Construct new instance.
 
@@ -257,10 +273,10 @@ structure of your report.
 
 \item{\code{make.file.name(
   name.base = "",
-  make.unique = T,
+  make.unique = TRUE,
   dir = NULL,
   sec.path = NULL,
-  name.base.first = F,
+  name.base.first = FALSE,
   name.ext = ""
 )}}{Return new file name that you can use to write your data to be included with the report.
 
@@ -282,11 +298,11 @@ structure of your report.
   self.contained.html = NULL,
   pandoc.binary = NULL,
   css.file = NULL,
-  export = T,
-  concatenate = F,
-  pandoc.meta = T,
+  export = TRUE,
+  concatenate = FALSE,
+  pandoc.meta = TRUE,
   knitr.auto.asis = NULL,
-  sort.by.sections = F
+  sort.by.sections = FALSE
 )}}{Save the report to Markdown and convert it to the final output formats.
 
   Call this at the end of your analysis.
@@ -343,10 +359,10 @@ structure of your report.
 \item{\code{write.table.file(
   data,
   name.base,
-  make.unique = T,
+  make.unique = TRUE,
   descr = NULL,
-  row.names = F,
-  row.names.header = T,
+  row.names = FALSE,
+  row.names.header = TRUE,
   file.name = NULL,
   ...
 )}}{Save table in a CSV text file.
