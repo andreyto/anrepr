@@ -8,3 +8,4 @@ README.md
 Dockerfile
 COPYING
 LICENSE.GPLv3.html
+run_rocker_docker.sh
