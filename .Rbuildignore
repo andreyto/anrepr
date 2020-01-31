@@ -2,10 +2,9 @@
 ^\.Rproj\.user$
 ^tests_run$
 ^tests/testthat/tests_run_.*$
+^docker$
 .DS_Store
 .Rhistory
 README.md
-Dockerfile
 COPYING
 LICENSE.GPLv3.html
-run_rocker_docker.sh
