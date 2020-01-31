@@ -8,12 +8,20 @@
 ## several single-stage files and build separately.
 ## Set envar MGSAT_REGISTRY if you are going to push
 ## the resulting images to the registry.
+## Set envar MGSAT_PUSH_REGISTRY to something if you
+## want the resulting images to be immediately pushed into
+## the registry. If registry requires logging in, you have to
+## be already logged in before you run this script
 
 this_dir=$(cd $(dirname $0); pwd)
 
 MGSAT_TAG=2.8
+push_reg=
 if [ -n "$MGSAT_REGISTRY" ]; then
     registry_pref=${MGSAT_REGISTRY}/
+    if [ -n "$MGSAT_PUSH_REGISTRY" ]; then
+        push_reg=1
+    fi
 else
     registry_pref=""
 fi
@@ -25,12 +33,18 @@ docker_build() {
         --tag $registry_pref$target:latest \
         --tag $registry_pref$target:$MGSAT_TAG \
         --target $target .
+
+    if [ -n "$push_reg" ]; then
+        docker push $registry_pref$target:$MGSAT_TAG
+        docker push $registry_pref$target:latest
+    fi
 }
 
-rm -rf mgsat_build_context
 mkdir -p mgsat_build_context
 
 pushd mgsat_build_context
+
+touch .dummy_sentinel.txt
 
 docker_build mgsat-deps
 docker_build mgsat

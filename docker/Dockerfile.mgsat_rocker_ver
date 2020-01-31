@@ -121,6 +121,21 @@ RUN ((curl -LJ https://github.com/andreyto/mgsat/tarball/master \
 FROM mgsat as cgfease
 
 RUN \
+  apt-get update \
+  && apt-get install -y --no-install-recommends \
+    python3-pip \
+    build-essential \
+    python3-dev \
+    python3-setuptools \
+    python3-wheel \
+    python3-pysam \
+  && apt-get autoremove -y \
+  && apt-get autoclean -y \
+  && rm -rf /var/lib/apt/lists/* \
+  && \
+pip3 install "git+https://github.com/ngs-mstb/micgent.git#subdirectory=python" \
+&& rm -rf /root/.cache/* \
+&& \
 install2.r --ncpus \-1 --error \
     --deps TRUE \
     --skipinstalled \
@@ -203,3 +218,6 @@ RUN \
     "flowCore"\
   ),clean=TRUE,Ncpus=max(1L, parallel::detectCores()))' \
   && rm -rf /tmp/downloaded_packages/*
+
+## trick to deploy local MGSAT code only if it exists in the build context
+ADD .dummy_sentinel.txt mgsa[t] ./mgsat
