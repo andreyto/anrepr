@@ -46,7 +46,7 @@ report generation by embedding analysis code into the documents written in a str
 languages such as LaTex, Markdown or HTML.
 When the document is "rendered" by Knitr, the code chunks written in R are replaced by the results of their 
 evaluation. 
-A [large ecosystem of tools](https://cran.r-project.org/web/views/ReproducibleResearch.html) 
+A [large ecosystem of tools](https://CRAN.R-project.org/view=ReproducibleResearch.html) 
 have been developed in the R community for automatically formatting various analysis objects into the markup 
 representation.
 
