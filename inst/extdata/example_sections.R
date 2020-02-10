@@ -175,4 +175,8 @@ make_example_sections_report <- function(report_dir=NULL,export=TRUE) {
 
 # ---- example_sections_report_run ----
 
-make_example_sections_report("example_sections_report")
+report_dir = file.path(tempdir(check=TRUE),
+  "anrepr_example_sections_report")
+make_example_sections_report(report_dir)
+message(sprintf("Example output report is in: %s, 
+  with the top-level page called: 0-report.html",report_dir))
