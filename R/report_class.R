@@ -1123,13 +1123,12 @@ anrep$methods(save = function(out.file=NULL,
 
     # if this subreport output was not touched before, write Pandoc metadata header
     if(pandoc.meta && is.null(fp.all[[fp.sub.md]])) {
-      ## extra empty elements is a work-around a bug in pander
-      ## where it otherwise omits % Pandoc header line tags
-      cat(pander::pandoc.title.return(
-          author=c(.self$author,""), 
-          title=c(.self$title,""), 
-          date=.self$date), 
-        file = fp.sub.md)
+      cat("%",if(is.null(.self$title)) "" 
+              else .self$title,"\n",
+          "%",if(is.null(.self$author)) "" 
+              else paste(.self$author,collapse=";"),"\n",
+          "%",.self$date,"\n",
+          file = fp.sub.md)
     }
 
     if(!concatenate && i.el>1) {
