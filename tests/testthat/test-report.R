@@ -2,7 +2,7 @@ context("report")
 
 run_in_sandbox_dir <- function(expr,dir_name,cleanup=TRUE,make.unique.dir=TRUE) {
 
-  if(missing(dir_name)) dir_name = file.path(getwd(),"tests_run")
+  if(missing(dir_name)) dir_name = tempdir(check=T)
 
   if(make.unique.dir) {
     dir_name = sprintf("%s_%s",dir_name,ceiling(runif(1, 0, 10^18)))
