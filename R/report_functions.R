@@ -119,8 +119,12 @@ anrep.link.verbatim.return <- function(url,text=NULL) {
 #' 
 #' This is vectorized over the arguments
 #'
-#' @param url Link URL
+#' @param file.name File name to link as URL
 #' @param text Link title
+#' @param selfcontained Embed file content as data URL in resulting HTML
+#' @param mime MIME type to set if embedding as a data URL
+#' @param encoding Data encoding to use if embedding as data URL. 
+#' Must be either "base64" or NULL.
 #'
 #' @export
 #'
