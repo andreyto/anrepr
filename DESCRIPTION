@@ -13,7 +13,8 @@ LazyData: true
 Imports:
     pander,
     stringr,
-    methods
+    methods,
+    base64enc
 Suggests:
     testthat,
     roxygen2,

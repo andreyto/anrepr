@@ -172,7 +172,7 @@ downstream processing.
 
 ```{r hello1, warning = FALSE, message = FALSE, cache=FALSE}
 library(anrepr)
-report = anrep("Hello World")
+report = anrep("Hello World",self.contained.data = TRUE)
 set.seed(1)
 for(i in 1:2) {
   rows = sample(nrow(mtcars),5)
@@ -217,10 +217,12 @@ setting in the Knitr chunk options). This is why we had to use `cat` when we act
 the raw Markdown text.
 
 The `knitr` output mode also turns off the generation of subreports (linked multiple documents) 
-and collects everything into a single Markdown string. As a side-note, links to
-saved data files will not work if `devtools::build_vignettes()` call was used
+and collects everything into a single Markdown string. The links to
+saved data files would not work if `devtools::build_vignettes()` call was used
 to generate a vignette for the R package, due to the `devtools` expectations that the output
-must be a single file.
+must be a single file. Therefore, we pass `self.contained.data = TRUE` parameters to
+the report constructor in order to embed the linked files as data URLs into the resulting
+HTML document.
 
 This vignette document was built with `knitr` for demonstrating the `anrep` API. The default intended mode
 for the `anrep`, however, is to let the `anrep$save` method call [Pandoc](http://pandoc.org/) conversion 
@@ -232,7 +234,7 @@ outside of Knitr, or if we forced it with `report = anrep("Hello World",out.form
 when running under Knitr.
 
 You will be able to view the results of `html` mode as a full auto-generated Web site following 
-the [link](example_sections_report/report-1.html) provided for a larger example script further 
+the link provided for a larger example script further 
 in this document. For now, we will use one more Knitr-rendered example for the purposes of introducing 
 `anrep` API features.
 
@@ -261,7 +263,7 @@ after testing that the corresponding widget packages are available in this R ins
 *************************************************************************
 
 ```{r warning = FALSE, message = F, cache=FALSE}
-report = anrep("Hello World")
+report = anrep("Hello World",self.contained.data = TRUE)
 report$add.header("First Hello header")
 report$add.table(mtcars[1:5,1:6], caption="Hello Table", show.row.names = T)
 # The operator %anrep>>% drops into a subsection:

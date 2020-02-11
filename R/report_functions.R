@@ -98,6 +98,8 @@ anrep.escape.special <- function(x) {
 }
 
 #' Return Markdown link, escaping the link title
+#' 
+#' This is vectorized over the arguments
 #'
 #' @param url Link URL
 #' @param text Link title
@@ -111,6 +113,29 @@ anrep.link.verbatim.return <- function(url,text=NULL) {
     text = url
   }
   sapply(seq_along(url),function(i) { pander::pandoc.link.return(url[i],pander::pandoc.verbatim.return(text[i]))})
+}
+
+#' Return Markdown link to a file, optionally embedding as a data URL
+#' 
+#' This is vectorized over the arguments
+#'
+#' @param url Link URL
+#' @param text Link title
+#'
+#' @export
+#'
+#' @examples
+#' anrep.file.link.verbatim.return("my_file")
+anrep.file.link.verbatim.return <- function(file.name,text=NULL,
+  selfcontained = FALSE, mime = "", encoding = "base64") {
+  if(is.null(text)) {
+    text = file.name
+  }
+  if(selfcontained) {
+    file.name = base64enc::dataURI(mime = mime, encoding = encoding, 
+      file = file.name)
+  }
+  anrep.link.verbatim.return(url=file.name,text=text)
 }
 
 #' Return Markdown string with a generated anchor (using HTML tag)

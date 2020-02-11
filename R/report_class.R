@@ -60,6 +60,7 @@ anrep <- setRefClass('anrep',
                        'out.file' = 'character',
                        'out.formats' = 'ANY',
                        'self.contained.html' = 'logical',
+                       'self.contained.data' = 'logical',
                        'object.index' = 'list',
                        'data.dir' = 'character',
                        'graph.dir' = 'character',
@@ -82,6 +83,7 @@ anrep$methods(initialize = function(
   out.formats = NULL,
   incremental.save = FALSE,
   self.contained.html=TRUE,
+  self.contained.data=FALSE,
   echo=FALSE,
   knitr.auto.asis=TRUE,
   ...
@@ -111,9 +113,13 @@ anrep$methods(initialize = function(
   for viewing or further manipulation.
 
   parameter: self.contained.html Embed images (default resolution versions) and stylesheets into each HTML file.
-  Note that generated data files and widget files will still be referenced by links. In any
-  case, the report directory as a whole will be portable in a sense that it can be archived into
-  a different location or computer and viewed where.
+  Note that generated data files and widget files will still be referenced by links unless
+  self.contained.data is set to TRUE. In any case, the report directory as a whole will be portable in a sense 
+  that it can be archived into a different location or computer and viewed where.
+
+  parameter: self.contained.data Embed everything including hi-res images, exported CSV files and widgets
+  into the HTML files. These entities will still appear as links on the HTML
+  pages.
 
   parameter: out.file Base for the output report file names (Markdown and final formats
   such as HTML). Files will be named like 1-<out.file>.html.
@@ -126,6 +132,7 @@ anrep$methods(initialize = function(
   .self$out.formats=out.formats
   .self$incremental.save=incremental.save
   .self$self.contained.html=self.contained.html
+  .self$self.contained.data=self.contained.data
   .self$object.index=list(table=1,figure=1)
   .self$data.dir = "data"
   .self$echo = echo
@@ -397,6 +404,7 @@ anrep$methods(add.widget = function(x,
                                     data.export = NULL,
                                     data.export.descr = NULL,
                                     show.inline = TRUE,
+                                    self.contained.data = NULL,
                                     ...) {
   "Add htmlwidget object.
 
@@ -417,10 +425,16 @@ anrep$methods(add.widget = function(x,
   very expensive to render in the browser (for example, a multiple sequence alignment widget
   for thousands of sequence). In this case, the user will have to navigate to the link in order
   to see the widget.
+
+  parameter: self.contained.data Embed a separate widget object and optional datasets as data URLs
+  into the resulting HTML
   "
   if(!requireNamespace("htmlwidgets", quietly = TRUE)) {
     stop("This method requires package htmlwidgets.")
   }
+
+  .self.contained.data = first_defined_arg(self.contained.data,.self$self.contained.data,F)
+
 
   if(is.null(width)) {
     width = pander::evalsOptions("width")
@@ -448,17 +462,27 @@ anrep$methods(add.widget = function(x,
 
   fn = .self$make.file.name(name.base,dir=.self$widget.dir,make.unique=TRUE,name.base.first = TRUE,name.ext = ".html")
 
-  htmlwidgets::saveWidget(x,fn,selfcontained = FALSE,libdir=.self$widget.deps.dir)
+  ## we do not need a separate widget file if embedding into knitr doc,
+  ## and with .self.contained.data the final doc gets too large because
+  ## all JS libs are encoded into data URL for every instance of the widget
+  if(!.self$priv.is.knitr.output()) {
 
-  caption.res = sprintf("Click to see HTML widget file in full window: %s",
-                        anrep.link.verbatim.return(fn))
+    htmlwidgets::saveWidget(x,fn,selfcontained = .self.contained.data,libdir=.self$widget.deps.dir)
 
-  caption = paste(caption,caption.res)
+    caption.res = sprintf("Click to see HTML widget file in full window: %s",
+                          anrep.file.link.verbatim.return(fn,selfcontained=.self.contained.data,
+                            mime="text/html"))
+
+    caption = paste(caption,caption.res)
+
+  }
 
   if(!is.null(data.export)) {
     caption = sprintf("%s. Dataset is also saved here: %s",
                       caption,
-                      anrep.link.verbatim.return(data.export))
+                      anrep.file.link.verbatim.return(data.export,
+                        selfcontained=.self.contained.data,
+                        mime="application/octet-stream"))
     if(!is.null(data.export.descr)) {
       caption = sprintf("%s, %s",caption,data.export.descr)
     }
@@ -512,12 +536,15 @@ anrep$methods(add = function(x,
                              graph.output = pander::evalsOptions("graph.output"),
                              hi.res = pander::evalsOptions("hi.res"),
                              new.paragraph=TRUE,
+                             self.contained.data=NULL,
                              ...) {
   "Add plot object, or any other kind of object.
 
   parameter: caption Text that will be added as a numbered caption
 
   parameter: show.image.links Include links to generated plot image(s) to the caption
+
+  parameter: self.contained.data Embed hi.res link as data URL into the resulting HTML
 
   parameter: ... Other arguments to pander::evals()
 
@@ -532,6 +559,9 @@ anrep$methods(add = function(x,
   else {
     env = NULL
   }
+
+  .self.contained.data = first_defined_arg(self.contained.data,.self$self.contained.data,F)
+
   ## work around pander bug in v.0.6.0 where hi.res is created as a broken symlink plots/normal.res
   ## instead of just normal.res
   if(graph.output %in% c('svg','pdf')) {
@@ -546,6 +576,9 @@ anrep$methods(add = function(x,
     .self$add.p("")
   }
 
+  mime = paste0("image/",graph.output)
+  if(graph.output=="svg") mime = paste0(mime,"+xml")
+  
   is.image = FALSE
   caption.res = ""
   for (r in res) {
@@ -554,13 +587,17 @@ anrep$methods(add = function(x,
         rr = r$result
         caption.res = paste(caption.res,
                             sprintf("Image file: %s.",
-                                    anrep.link.verbatim.return(as.character(rr)))
+                                    anrep.file.link.verbatim.return(as.character(rr),
+                                      selfcontained=.self.contained.data,
+                                      mime=mime))
         )
         hres.ref = attr(rr,"href")
         if(!is.null(hres.ref)) {
           caption.res = paste(caption.res,
                               sprintf("High resolution image file: %s.",
-                                      anrep.link.verbatim.return(hres.ref))
+                                      anrep.file.link.verbatim.return(hres.ref,
+                                        selfcontained=.self.contained.data,
+                                        mime=mime))
           )
         }
       }
@@ -752,6 +789,7 @@ anrep$methods(add.table = function(x,
                                    style="rmarkdown",
                                    skip.if.empty=FALSE,
                                    echo=NULL,
+                                   self.contained.data=NULL,
                                    ...) {
   "Add table object.
 
@@ -779,8 +817,13 @@ anrep$methods(add.table = function(x,
 
   parameter: style Overwrites default pander argument for tables Markdown style
 
+  parameter: self.contained.data Embed full size data file as data URL in the resulting HTML
+
   parameter: ... Passed to pander::pandoc.table.return
   "
+
+  .self.contained.data = first_defined_arg(self.contained.data,.self$self.contained.data,F)
+
   if (wrap.caption && !is.null(caption)) {
     caption = anrep.escape.special(caption)
   }
@@ -825,7 +868,7 @@ anrep$methods(add.table = function(x,
                                        file.name=file.name)
     caption = paste(caption,
                     "Full dataset is also saved in a delimited text file (click to download and open e.g. in Excel)",
-                    pander::pandoc.link.return(file.name,pander::pandoc.verbatim.return(file.name))
+                    anrep.file.link.verbatim.return(file.name,selfcontained=.self.contained.data,mime="txt/csv")
     )
   }
 
