@@ -3,6 +3,7 @@
 ^tests_run$
 ^tests/testthat/tests_run_.*$
 ^docker$
+^docs$
 .DS_Store
 .Rhistory
 README.md
