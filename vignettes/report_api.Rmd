@@ -2,7 +2,10 @@
 title: "Anrepr Tutorial"
 author: "Andrey Tovchigrechko"
 date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
+output:
+  rmarkdown::html_vignette
+resource_files:
+  - plots
 vignette: >
   %\VignetteIndexEntry{Anrepr Tutorial}
   %\VignetteEngine{knitr::rmarkdown}
