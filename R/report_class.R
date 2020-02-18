@@ -581,6 +581,7 @@ anrep$methods(add = function(x,
   
   is.image = FALSE
   caption.res = ""
+  res_out = list()
   for (r in res) {
     if(any(r$type=="image")) {
       if(show.image.links) {
@@ -599,11 +600,18 @@ anrep$methods(add = function(x,
                                         selfcontained=.self.contained.data,
                                         mime=mime))
           )
+          if(isTRUE(.self.contained.data)) {
+            ## do not link image to hi-res image file
+            attr(r$result,"href") = NULL
+          }
         }
       }
       is.image = TRUE
     }
+    res_out = c(res_out,list(r))
   }
+  res = res_out
+
   if(is.null(caption.type)) {
     if(is.image) {
       caption.type = "figure"
