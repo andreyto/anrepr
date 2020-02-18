@@ -173,9 +173,16 @@ downstream processing.
 
 *************************************************************************
 
+For vignette output, we will encode the linked data files and high resultion 
+images into the HTML output file.
+
+```{r}
+self.contained.data = TRUE
+```
+
 ```{r hello1, warning = FALSE, message = FALSE, cache=FALSE}
 library(anrepr)
-report = anrep("Hello World",self.contained.data = TRUE)
+report = anrep("Hello World",self.contained.data = self.contained.data)
 set.seed(1)
 for(i in 1:2) {
   rows = sample(nrow(mtcars),5)
@@ -204,9 +211,16 @@ report$save()
 *************************************************************************
 
 *The raw generated Markdown from the Hello World example looks like this:*
-
+```{r, echo = FALSE, results = "hide"}
+self.contained.data = FALSE
+```
+```{r, hello1, results = "hide", echo = FALSE, warning = FALSE, message = FALSE, cache=FALSE, comment=''}
+```
 ```{r, warning = FALSE, message = FALSE, cache=FALSE, comment=''}
 cat(report$save())
+```
+```{r, echo = FALSE, results = "hide"}
+self.contained.data = TRUE
 ```
 
 *************************************************************************
